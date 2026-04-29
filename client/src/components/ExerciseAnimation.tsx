@@ -512,6 +512,38 @@ function SceneShell({
             <stop offset="0%" stopColor="#40ff9a" stopOpacity="0.95" />
             <stop offset="100%" stopColor="#39d7ff" stopOpacity="0.92" />
           </linearGradient>
+          <linearGradient id="skinGradient" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor="#ffd8bd" />
+            <stop offset="45%" stopColor="#d89464" />
+            <stop offset="100%" stopColor="#8f5539" />
+          </linearGradient>
+          <linearGradient id="shirtGradient" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor="#4cf5a0" />
+            <stop offset="55%" stopColor="#1e9c76" />
+            <stop offset="100%" stopColor="#13506a" />
+          </linearGradient>
+          <linearGradient id="shortsGradient" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor="#1b2b45" />
+            <stop offset="100%" stopColor="#070a12" />
+          </linearGradient>
+          <linearGradient id="shoeGradient" x1="0" x2="1">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="100%" stopColor="#9fb2c7" />
+          </linearGradient>
+          <linearGradient id="gloveGradient" x1="0" x2="1">
+            <stop offset="0%" stopColor="#ff7a95" />
+            <stop offset="100%" stopColor="#ffc857" />
+          </linearGradient>
+          <linearGradient id="metalGradient" x1="0" x2="1">
+            <stop offset="0%" stopColor="#f8fbff" />
+            <stop offset="45%" stopColor="#9fb1c7" />
+            <stop offset="100%" stopColor="#eef6ff" />
+          </linearGradient>
+          <radialGradient id="muscleHighlight" cx="35%" cy="25%" r="75%">
+            <stop offset="0%" stopColor="#fff0dd" stopOpacity="0.78" />
+            <stop offset="60%" stopColor="#d89464" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="#6a3728" stopOpacity="0.2" />
+          </radialGradient>
           <linearGradient id="gearGradient" x1="0" x2="1">
             <stop offset="0%" stopColor="#ffc857" />
             <stop offset="100%" stopColor="#ff4f7b" />
@@ -1174,6 +1206,509 @@ function BattleRopesScene() {
   );
 }
 
+type MotionNumber = number | number[];
+
+function AnatomyLine({
+  x1,
+  y1,
+  x2,
+  y2,
+  width = 15,
+  fill = "url(#skinGradient)",
+  transition = loop
+}: {
+  x1: MotionNumber;
+  y1: MotionNumber;
+  x2: MotionNumber;
+  y2: MotionNumber;
+  width?: number;
+  fill?: string;
+  transition?: typeof loop | typeof quickLoop;
+}) {
+  return (
+    <g>
+      <motion.line
+        animate={{ x1, y1, x2, y2 }}
+        transition={transition}
+        stroke="#05070b"
+        strokeOpacity="0.34"
+        strokeLinecap="round"
+        strokeWidth={width + 7}
+      />
+      <motion.line animate={{ x1, y1, x2, y2 }} transition={transition} stroke={fill} strokeLinecap="round" strokeWidth={width} />
+      <motion.line
+        animate={{ x1, y1, x2, y2 }}
+        transition={transition}
+        stroke="#fff0dd"
+        strokeOpacity="0.38"
+        strokeLinecap="round"
+        strokeWidth={Math.max(2, width * 0.18)}
+      />
+    </g>
+  );
+}
+
+function AvatarHead({ x, y, rotate = [0, 0, 0], scale = 1 }: { x: MotionNumber; y: MotionNumber; rotate?: MotionNumber; scale?: number }) {
+  return (
+    <motion.g animate={{ x, y, rotate, scale }} transition={loop} style={{ transformOrigin: "0px 0px" }}>
+      <ellipse cx="0" cy="1" rx="15" ry="17" fill="url(#skinGradient)" stroke="#fff0dd" strokeOpacity="0.45" strokeWidth="1.5" />
+      <path d="M-14 -5 C-10 -19 11 -19 16 -4 C6 -8 -2 -7 -14 -5Z" fill="#171a22" />
+      <circle cx="-5" cy="1" r="1.5" fill="#16181f" />
+      <circle cx="5" cy="1" r="1.5" fill="#16181f" />
+      <path d="M-4 9 C0 12 5 11 8 8" fill="none" stroke="#6d3f2e" strokeLinecap="round" strokeWidth="1.5" />
+      <path d="M-14 2 C-19 4 -18 12 -12 13" fill="url(#skinGradient)" opacity="0.9" />
+    </motion.g>
+  );
+}
+
+function AvatarTorso({ x = 180, y = 86, rotate = 0 }: { x?: MotionNumber; y?: MotionNumber; rotate?: MotionNumber }) {
+  return (
+    <motion.g animate={{ x, y, rotate }} transition={loop} style={{ transformOrigin: "0px 36px" }}>
+      <path
+        d="M-28 4 C-22 -10 22 -10 28 4 L35 57 C22 72 -22 72 -35 57Z"
+        fill="url(#shirtGradient)"
+        stroke="#bfffe0"
+        strokeOpacity="0.32"
+        strokeWidth="2"
+      />
+      <path d="M-22 13 C-8 22 8 22 22 13" fill="none" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="2" />
+      <path d="M0 12 L0 58" stroke="#05070b" strokeOpacity="0.18" strokeWidth="2" />
+      <path d="M-29 55 C-15 67 15 67 29 55 L34 73 C14 84 -14 84 -34 73Z" fill="url(#shortsGradient)" />
+      <path d="M-17 76 H17" stroke="#ffffff" strokeOpacity="0.12" strokeLinecap="round" strokeWidth="2" />
+    </motion.g>
+  );
+}
+
+function AvatarGlove({ point, size = 8 }: { point: PointFrames; size?: number }) {
+  return (
+    <motion.g animate={{ x: point.x, y: point.y }} transition={loop}>
+      <ellipse cx="0" cy="0" rx={size + 3} ry={size} fill="#05070b" fillOpacity="0.3" />
+      <ellipse cx="0" cy="-1" rx={size} ry={size + 2} fill="url(#gloveGradient)" stroke="#fff0dd" strokeOpacity="0.28" />
+    </motion.g>
+  );
+}
+
+function AvatarShoe({ x, y, flip = false }: { x: MotionNumber; y: MotionNumber; flip?: boolean }) {
+  return (
+    <motion.g animate={{ x, y, scaleX: flip ? -1 : 1 }} transition={loop}>
+      <path d="M-5 -7 C7 -6 20 -1 25 6 C15 11 -11 10 -22 6 C-20 -2 -14 -7 -5 -7Z" fill="url(#shoeGradient)" />
+      <path d="M-20 6 H23" stroke="#05070b" strokeOpacity="0.32" strokeWidth="2" strokeLinecap="round" />
+    </motion.g>
+  );
+}
+
+function RealisticArm({ shoulder, arm }: { shoulder: { x: number; y: number }; arm: LimbFrames }) {
+  return (
+    <g>
+      <AnatomyLine x1={shoulder.x} y1={shoulder.y} x2={arm.elbow.x} y2={arm.elbow.y} width={14} />
+      <AnatomyLine x1={arm.elbow.x} y1={arm.elbow.y} x2={arm.hand.x} y2={arm.hand.y} width={12} />
+      <AvatarGlove point={arm.hand} />
+    </g>
+  );
+}
+
+function RealisticStandingScene({ preset }: { preset: StandingPreset }) {
+  const leftArm = preset.leftArm ?? baseLeftArm;
+  const rightArm = preset.rightArm ?? baseRightArm;
+  const bodyY = preset.bodyY ?? [0, 0, 0];
+  const torsoRotate = preset.torsoRotate ?? [0, 0, 0];
+
+  return (
+    <>
+      {preset.equipment === "cable-high" || preset.equipment === "cable-low" ? (
+        <StandingEquipment preset={preset} leftHand={leftArm.hand} rightHand={rightArm.hand} />
+      ) : null}
+      {preset.equipment === "none" ? <DipBars /> : null}
+      <motion.g animate={{ y: bodyY, rotate: torsoRotate }} transition={loop} style={{ transformOrigin: "180px 132px" }}>
+        <AnatomyLine x1={171} y1={154} x2={154} y2={190} width={18} />
+        <AnatomyLine x1={189} y1={154} x2={207} y2={190} width={18} />
+        <AvatarShoe x={146} y={195} />
+        <AvatarShoe x={215} y={195} flip />
+        <RealisticArm shoulder={{ x: 157, y: 100 }} arm={leftArm} />
+        <RealisticArm shoulder={{ x: 203, y: 100 }} arm={rightArm} />
+        <AvatarTorso />
+        <AvatarHead x={preset.headX ?? [180, 180, 180]} y={62} />
+        {preset.equipment === "dumbbells" ? (
+          <>
+            <DumbbellAt point={leftArm.hand} />
+            <DumbbellAt point={rightArm.hand} />
+          </>
+        ) : null}
+        {preset.equipment === "barbell" && !preset.barY ? <Barbell y={leftArm.hand.y} /> : null}
+        {preset.equipment === "barbell" && preset.barY ? <Barbell y={preset.barY} /> : null}
+        {preset.equipment === "kettlebell" || preset.equipment === "medicine-ball" ? (
+          <StandingEquipment preset={preset} leftHand={leftArm.hand} rightHand={rightArm.hand} />
+        ) : null}
+      </motion.g>
+    </>
+  );
+}
+
+function RealisticBenchScene({ preset }: { preset: BenchPreset }) {
+  const benchAngle = preset.incline ? -14 : 0;
+  const bodyRotate = preset.bodyRotate ?? benchAngle;
+  const handX = preset.handX ?? [152, 152, 152];
+
+  return (
+    <>
+      <motion.g style={{ transformOrigin: "180px 162px" }} animate={{ rotate: benchAngle }} transition={loop}>
+        <rect x="88" y="166" width="184" height="18" rx="9" fill="#172235" stroke="#ffffff" strokeOpacity="0.18" />
+        <rect x="104" y="154" width="82" height="11" rx="5" fill="#243554" opacity="0.8" />
+        <path d="M121 183 L103 215 M239 183 L259 215" stroke="url(#metalGradient)" strokeOpacity="0.62" strokeWidth="7" strokeLinecap="round" />
+      </motion.g>
+      <motion.g animate={{ rotate: bodyRotate }} transition={loop} style={{ transformOrigin: "180px 150px" }}>
+        <AvatarHead x={116} y={142} rotate={bodyRotate ? 0 : -6} scale={0.88} />
+        <path d="M133 145 C158 136 191 144 214 160 C205 177 151 171 130 155Z" fill="url(#shirtGradient)" stroke="#bfffe0" strokeOpacity="0.28" strokeWidth="2" />
+        <path d="M206 162 C221 164 237 173 252 185 L241 201 C223 194 209 183 198 170Z" fill="url(#shortsGradient)" />
+        <AnatomyLine x1={209} y1={170} x2={248} y2={190} width={14} />
+        <AnatomyLine x1={204} y1={166} x2={238} y2={204} width={14} />
+        <AvatarShoe x={252} y={188} />
+        <AvatarShoe x={239} y={205} flip />
+        <AnatomyLine x1={145} y1={146} x2={handX} y2={preset.pressY} width={12} />
+        <AnatomyLine x1={182} y1={154} x2={208} y2={preset.elbowY} width={13} />
+        <AnatomyLine x1={208} y1={preset.elbowY} x2={preset.handX ?? [218, 224, 218]} y2={preset.pressY} width={12} />
+        <AvatarGlove point={{ x: handX, y: preset.pressY }} size={7} />
+        <AvatarGlove point={{ x: preset.handX ?? [218, 224, 218], y: preset.pressY }} size={7} />
+      </motion.g>
+      <BenchEquipment preset={preset} />
+    </>
+  );
+}
+
+function RealisticFloorScene({ preset }: { preset: FloorPreset }) {
+  if (preset.mode === "pushup") return <RealisticPushup />;
+  if (preset.mode === "plank") return <RealisticPlank />;
+  if (preset.mode === "crunch") return <RealisticCrunch />;
+  if (preset.mode === "leg-raise") return <RealisticLegRaise />;
+  if (preset.mode === "twist") return <RealisticTwist />;
+  return <RealisticBurpee />;
+}
+
+function RealisticPushup() {
+  return (
+    <motion.g animate={{ y: [0, 23, 0] }} transition={loop}>
+      <AvatarHead x={82} y={141} rotate={-7} scale={0.9} />
+      <path d="M101 143 C139 132 200 136 244 148 C238 164 150 164 99 154Z" fill="url(#shirtGradient)" />
+      <AnatomyLine x1={132} y1={151} x2={126} y2={[190, 166, 190]} width={13} />
+      <AnatomyLine x1={172} y1={151} x2={176} y2={[190, 166, 190]} width={13} />
+      <AnatomyLine x1={238} y1={151} x2={286} y2={178} width={14} />
+      <AnatomyLine x1={240} y1={151} x2={292} y2={157} width={14} />
+      <AvatarShoe x={292} y={158} flip />
+      <AvatarShoe x={286} y={179} flip />
+    </motion.g>
+  );
+}
+
+function RealisticPlank() {
+  return (
+    <motion.g animate={{ y: [0, -2, 0], rotate: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} style={{ transformOrigin: "180px 150px" }}>
+      <AvatarHead x={76} y={144} rotate={-6} scale={0.9} />
+      <path d="M96 145 C136 135 204 137 255 148 C249 162 149 163 94 154Z" fill="url(#shirtGradient)" />
+      <AnatomyLine x1={126} y1={154} x2={102} y2={190} width={13} />
+      <AnatomyLine x1={248} y1={151} x2={294} y2={180} width={14} />
+      <AnatomyLine x1={248} y1={151} x2={300} y2={155} width={14} />
+      <AvatarShoe x={298} y={156} flip />
+    </motion.g>
+  );
+}
+
+function RealisticCrunch() {
+  return (
+    <g>
+      <path d="M106 190 H292" stroke="#ffffff" strokeOpacity="0.1" strokeWidth="14" strokeLinecap="round" />
+      <motion.g animate={{ rotate: [0, -25, 0], x: [0, 12, 0], y: [0, -22, 0] }} transition={loop} style={{ transformOrigin: "190px 178px" }}>
+        <AvatarHead x={118} y={160} rotate={-8} scale={0.9} />
+        <path d="M136 168 C166 150 198 158 226 184 C203 194 159 192 135 177Z" fill="url(#shirtGradient)" />
+      </motion.g>
+      <AnatomyLine x1={220} y1={184} x2={[250, 265, 250]} y2={[172, 178, 172]} width={14} />
+      <AnatomyLine x1={224} y1={184} x2={286} y2={190} width={14} />
+      <AvatarShoe x={286} y={190} flip />
+    </g>
+  );
+}
+
+function RealisticLegRaise() {
+  return (
+    <g>
+      <path d="M80 55 H280" stroke="url(#metalGradient)" strokeWidth="9" strokeLinecap="round" />
+      <AvatarHead x={180} y={88} scale={0.9} />
+      <path d="M161 105 C171 98 190 98 199 105 L197 153 C187 160 173 160 163 153Z" fill="url(#shirtGradient)" />
+      <AnatomyLine x1={154} y1={56} x2={172} y2={104} width={12} />
+      <AnatomyLine x1={206} y1={56} x2={188} y2={104} width={12} />
+      <AnatomyLine x1={180} y1={154} x2={[144, 130, 144]} y2={[194, 124, 194]} width={14} />
+      <AnatomyLine x1={180} y1={154} x2={[216, 230, 216]} y2={[194, 124, 194]} width={14} />
+    </g>
+  );
+}
+
+function RealisticTwist() {
+  return (
+    <g>
+      <motion.g animate={{ rotate: [-18, 18, -18] }} transition={loop} style={{ transformOrigin: "178px 152px" }}>
+        <AvatarHead x={156} y={103} scale={0.9} />
+        <path d="M161 119 C183 123 199 146 204 171 C186 179 163 169 152 143Z" fill="url(#shirtGradient)" />
+        <AnatomyLine x1={174} y1={136} x2={126} y2={156} width={12} />
+        <AnatomyLine x1={180} y1={139} x2={232} y2={156} width={12} />
+        <circle cx="180" cy="154" r="13" fill="url(#gearGradient)" stroke="#ffffff" strokeOpacity="0.28" />
+      </motion.g>
+      <AnatomyLine x1={200} y1={170} x2={268} y2={204} width={14} />
+      <AnatomyLine x1={200} y1={170} x2={274} y2={169} width={14} />
+    </g>
+  );
+}
+
+function RealisticBurpee() {
+  return (
+    <motion.g animate={{ y: [-44, 36, 0, -44], rotate: [0, 0, -8, 0] }} transition={{ duration: 2.1, repeat: Infinity, ease: "easeInOut" }} style={{ transformOrigin: "180px 142px" }}>
+      <AvatarHead x={180} y={70} />
+      <AvatarTorso x={180} y={88} rotate={[0, 0, -4, 0]} />
+      <AnatomyLine x1={162} y1={107} x2={138} y2={144} width={12} />
+      <AnatomyLine x1={198} y1={107} x2={222} y2={144} width={12} />
+      <AnatomyLine x1={174} y1={160} x2={146} y2={192} width={14} />
+      <AnatomyLine x1={186} y1={160} x2={214} y2={192} width={14} />
+      <AvatarShoe x={146} y={192} />
+      <AvatarShoe x={214} y={192} flip />
+    </motion.g>
+  );
+}
+
+function RealisticPullScene({ preset }: { preset: PullPreset }) {
+  if (preset.mode === "pullup") return <RealisticPullup />;
+  if (preset.mode === "lat-pulldown") return <RealisticLatPulldown />;
+  if (preset.mode === "barbell-row") return <RealisticBarbellRow />;
+  if (preset.mode === "seated-row") return <RealisticSeatedRow />;
+  if (preset.mode === "face-pull") return <RealisticFacePull />;
+  return <RealisticRower />;
+}
+
+function RealisticPullup() {
+  return (
+    <g>
+      <path d="M82 50 H278" stroke="url(#metalGradient)" strokeWidth="9" strokeLinecap="round" />
+      <motion.g animate={{ y: [44, 0, 44] }} transition={loop}>
+        <AvatarHead x={180} y={103} />
+        <AvatarTorso x={180} y={120} />
+        <AnatomyLine x1={164} y1={126} x2={132} y2={54} width={12} />
+        <AnatomyLine x1={196} y1={126} x2={228} y2={54} width={12} />
+        <AnatomyLine x1={173} y1={184} x2={160} y2={206} width={14} />
+        <AnatomyLine x1={187} y1={184} x2={202} y2={206} width={14} />
+      </motion.g>
+    </g>
+  );
+}
+
+function RealisticLatPulldown() {
+  return (
+    <g>
+      <CableTower side="left" />
+      <CableTower side="right" />
+      <motion.path d="M126 0 H234" animate={{ y: [84, 124, 84] }} transition={loop} stroke="url(#metalGradient)" strokeWidth="8" strokeLinecap="round" />
+      <AvatarHead x={180} y={132} />
+      <AvatarTorso x={180} y={150} />
+      <AnatomyLine x1={164} y1={154} x2={[126, 144, 126]} y2={[84, 124, 84]} width={12} />
+      <AnatomyLine x1={196} y1={154} x2={[234, 216, 234]} y2={[84, 124, 84]} width={12} />
+      <rect x="139" y="198" width="82" height="12" rx="6" fill="#172235" />
+    </g>
+  );
+}
+
+function RealisticBarbellRow() {
+  return (
+    <motion.g animate={{ rotate: [18, 22, 18] }} transition={loop} style={{ transformOrigin: "178px 150px" }}>
+      <AvatarHead x={145} y={98} rotate={18} scale={0.9} />
+      <path d="M158 112 C188 111 211 137 224 166 C203 177 169 159 151 127Z" fill="url(#shirtGradient)" />
+      <AnatomyLine x1={210} y1={162} x2={178} y2={206} width={14} />
+      <AnatomyLine x1={216} y1={166} x2={254} y2={204} width={14} />
+      <AnatomyLine x1={178} y1={132} x2={[170, 205, 170]} y2={[190, 144, 190]} width={12} />
+      <AnatomyLine x1={196} y1={142} x2={[220, 218, 220]} y2={[190, 150, 190]} width={12} />
+      <motion.g animate={{ y: [190, 148, 190] }} transition={loop}>
+        <path d="M132 0 H252" stroke="url(#metalGradient)" strokeWidth="8" strokeLinecap="round" />
+        <rect x="112" y="-14" width="16" height="28" rx="4" fill="#ff4f7b" />
+        <rect x="256" y="-14" width="16" height="28" rx="4" fill="#ffc857" />
+      </motion.g>
+    </motion.g>
+  );
+}
+
+function RealisticSeatedRow() {
+  return (
+    <g>
+      <CableTower side="right" />
+      <rect x="105" y="190" width="100" height="13" rx="6" fill="#172235" />
+      <motion.g animate={{ x: [8, -18, 8] }} transition={loop}>
+        <AvatarHead x={145} y={114} scale={0.9} />
+        <path d="M153 129 C177 139 192 160 201 190 C183 196 157 169 145 137Z" fill="url(#shirtGradient)" />
+        <AnatomyLine x1={184} y1={192} x2={232} y2={194} width={14} />
+        <AnatomyLine x1={154} y1={140} x2={[220, 188, 220]} y2={[144, 142, 144]} width={12} />
+      </motion.g>
+    </g>
+  );
+}
+
+function RealisticFacePull() {
+  return (
+    <g>
+      <CableTower side="right" />
+      <AvatarHead x={158} y={98} scale={0.9} />
+      <AvatarTorso x={168} y={114} rotate={-3} />
+      <AnatomyLine x1={168} y1={126} x2={[244, 176, 244]} y2={[122, 101, 122]} width={12} />
+      <AnatomyLine x1={172} y1={135} x2={[244, 182, 244]} y2={[134, 106, 134]} width={12} />
+      <AnatomyLine x1={163} y1={184} x2={146} y2={208} width={14} />
+      <AnatomyLine x1={176} y1={184} x2={198} y2={208} width={14} />
+    </g>
+  );
+}
+
+function RealisticRower() {
+  return (
+    <g>
+      <path d="M92 198 H272" stroke="url(#metalGradient)" strokeOpacity="0.7" strokeWidth="9" strokeLinecap="round" />
+      <rect x="250" y="154" width="38" height="48" rx="8" fill="#172235" stroke="#39d7ff" strokeOpacity="0.28" />
+      <motion.g animate={{ x: [34, -20, 34] }} transition={loop}>
+        <AvatarHead x={138} y={116} scale={0.9} />
+        <path d="M148 130 C170 139 186 165 191 194 C173 195 149 162 139 132Z" fill="url(#shirtGradient)" />
+        <AnatomyLine x1={184} y1={192} x2={232} y2={194} width={14} />
+        <AnatomyLine x1={154} y1={140} x2={220} y2={144} width={12} />
+      </motion.g>
+    </g>
+  );
+}
+
+function RealisticLegScene({ preset }: { preset: LegPreset }) {
+  if (preset.mode === "squat") return <RealisticSquat />;
+  if (preset.mode === "leg-press") return <RealisticLegPress />;
+  if (preset.mode === "lunge") return <RealisticLunge />;
+  if (preset.mode === "rdl") return <RealisticRdl />;
+  return <RealisticCalf />;
+}
+
+function RealisticSquat() {
+  return (
+    <g>
+      <motion.g animate={{ y: [0, 34, 0] }} transition={loop}>
+        <AvatarHead x={180} y={68} />
+        <AvatarTorso x={180} y={84} />
+        <Barbell y={96} />
+      </motion.g>
+      <AnatomyLine x1={176} y1={154} x2={[150, 138, 150]} y2={[184, 172, 184]} width={17} />
+      <AnatomyLine x1={[150, 138, 150]} y1={[184, 172, 184]} x2={[132, 162, 132]} y2={[210, 210, 210]} width={15} />
+      <AnatomyLine x1={184} y1={154} x2={[212, 222, 212]} y2={[184, 172, 184]} width={17} />
+      <AnatomyLine x1={[212, 222, 212]} y1={[184, 172, 184]} x2={[232, 198, 232]} y2={[210, 210, 210]} width={15} />
+    </g>
+  );
+}
+
+function RealisticLegPress() {
+  return (
+    <g>
+      <path d="M88 198 L248 80" stroke="#ffffff" strokeOpacity="0.16" strokeWidth="13" strokeLinecap="round" />
+      <motion.g animate={{ x: [0, 30, 0], y: [0, -22, 0] }} transition={loop}>
+        <rect x="226" y="70" width="54" height="86" rx="9" fill="#172235" stroke="#39d7ff" strokeOpacity="0.32" />
+      </motion.g>
+      <AvatarHead x={116} y={154} scale={0.9} />
+      <path d="M130 162 C156 164 187 180 209 194 C197 207 149 190 124 170Z" fill="url(#shirtGradient)" />
+      <AnatomyLine x1={198} y1={190} x2={[226, 250, 226]} y2={[150, 128, 150]} width={16} />
+      <AnatomyLine x1={208} y1={194} x2={[236, 260, 236]} y2={[160, 138, 160]} width={16} />
+    </g>
+  );
+}
+
+function RealisticLunge() {
+  return (
+    <motion.g animate={{ x: [-12, 18, -12] }} transition={loop}>
+      <AvatarHead x={172} y={70} />
+      <AvatarTorso x={174} y={88} />
+      <DumbbellAt point={{ x: [132, 132, 132], y: [144, 144, 144] }} />
+      <DumbbellAt point={{ x: [220, 220, 220], y: [144, 144, 144] }} />
+      <AnatomyLine x1={158} y1={107} x2={132} y2={144} width={12} />
+      <AnatomyLine x1={196} y1={107} x2={220} y2={144} width={12} />
+      <AnatomyLine x1={176} y1={160} x2={[144, 128, 144]} y2={[180, 190, 180]} width={16} />
+      <AnatomyLine x1={[144, 128, 144]} y1={[180, 190, 180]} x2={118} y2={210} width={15} />
+      <AnatomyLine x1={184} y1={160} x2={[222, 226, 222]} y2={[170, 186, 170]} width={16} />
+      <AnatomyLine x1={[222, 226, 222]} y1={[170, 186, 170]} x2={260} y2={210} width={15} />
+    </motion.g>
+  );
+}
+
+function RealisticRdl() {
+  return (
+    <g>
+      <motion.g animate={{ rotate: [0, 34, 0], y: [0, 10, 0] }} transition={loop} style={{ transformOrigin: "178px 144px" }}>
+        <AvatarHead x={180} y={68} />
+        <AvatarTorso x={180} y={84} />
+        <AnatomyLine x1={162} y1={112} x2={142} y2={174} width={12} />
+        <AnatomyLine x1={198} y1={112} x2={218} y2={174} width={12} />
+      </motion.g>
+      <Barbell y={[174, 198, 174]} />
+      <AnatomyLine x1={174} y1={154} x2={156} y2={210} width={16} />
+      <AnatomyLine x1={186} y1={154} x2={206} y2={210} width={16} />
+    </g>
+  );
+}
+
+function RealisticCalf() {
+  return (
+    <motion.g animate={{ y: [6, -10, 6] }} transition={loop}>
+      <AvatarHead x={180} y={70} />
+      <AvatarTorso x={180} y={86} />
+      <AnatomyLine x1={160} y1={110} x2={134} y2={154} width={12} />
+      <AnatomyLine x1={200} y1={110} x2={226} y2={154} width={12} />
+      <AnatomyLine x1={174} y1={160} x2={[158, 160, 158]} y2={[198, 188, 198]} width={16} />
+      <AnatomyLine x1={186} y1={160} x2={[204, 202, 204]} y2={[198, 188, 198]} width={16} />
+      <AvatarShoe x={[170, 174, 170]} y={[204, 198, 204]} />
+      <AvatarShoe x={[238, 234, 238]} y={[204, 198, 204]} flip />
+    </motion.g>
+  );
+}
+
+function RealisticCardioScene({ preset }: { preset: CardioPreset }) {
+  if (preset.mode === "ropes") return <RealisticBattleRopes />;
+  return <RealisticTreadmill />;
+}
+
+function RealisticTreadmill() {
+  return (
+    <g>
+      <rect x="90" y="196" width="184" height="18" rx="9" fill="#172235" stroke="#39d7ff" strokeOpacity="0.28" />
+      <motion.path d="M108 205 H254" stroke="#40ff9a" strokeOpacity="0.65" strokeWidth="3" strokeDasharray="12 10" animate={{ strokeDashoffset: [0, -44, 0] }} transition={quickLoop} />
+      <motion.g animate={{ y: [0, -8, 0] }} transition={quickLoop}>
+        <AvatarHead x={180} y={78} />
+        <AvatarTorso x={178} y={94} rotate={[-3, 3, -3]} />
+        <AnatomyLine x1={170} y1={108} x2={[142, 210, 142]} y2={[142, 116, 142]} width={12} transition={quickLoop} />
+        <AnatomyLine x1={188} y1={108} x2={[218, 146, 218]} y2={[140, 116, 140]} width={12} transition={quickLoop} />
+        <AnatomyLine x1={176} y1={160} x2={[142, 220, 142]} y2={[192, 178, 192]} width={15} transition={quickLoop} />
+        <AnatomyLine x1={178} y1={160} x2={[220, 142, 220]} y2={[178, 192, 178]} width={15} transition={quickLoop} />
+      </motion.g>
+    </g>
+  );
+}
+
+function RealisticBattleRopes() {
+  return (
+    <g>
+      <motion.path d="M180 150 C220 118 252 180 300 150" fill="none" stroke="#40ff9a" strokeLinecap="round" strokeWidth="7" animate={{ d: ["M180 150 C220 118 252 180 300 150", "M180 150 C220 182 252 118 300 150", "M180 150 C220 118 252 180 300 150"] }} transition={quickLoop} />
+      <motion.path d="M180 160 C220 192 252 130 300 160" fill="none" stroke="#39d7ff" strokeLinecap="round" strokeWidth="7" animate={{ d: ["M180 160 C220 192 252 130 300 160", "M180 160 C220 128 252 192 300 160", "M180 160 C220 192 252 130 300 160"] }} transition={quickLoop} />
+      <motion.g animate={{ y: [0, -6, 0] }} transition={quickLoop}>
+        <AvatarHead x={150} y={76} />
+        <AvatarTorso x={158} y={92} rotate={8} />
+        <AnatomyLine x1={158} y1={112} x2={[184, 178, 184]} y2={[150, 132, 150]} width={12} transition={quickLoop} />
+        <AnatomyLine x1={164} y1={126} x2={[184, 178, 184]} y2={[160, 178, 160]} width={12} transition={quickLoop} />
+        <AnatomyLine x1={160} y1={160} x2={136} y2={204} width={15} />
+        <AnatomyLine x1={160} y1={160} x2={198} y2={204} width={15} />
+      </motion.g>
+    </g>
+  );
+}
+
+function RealisticScene({ preset }: { preset: ExercisePreset }) {
+  if (preset.template === "standing") return <RealisticStandingScene preset={preset} />;
+  if (preset.template === "bench") return <RealisticBenchScene preset={preset} />;
+  if (preset.template === "floor") return <RealisticFloorScene preset={preset} />;
+  if (preset.template === "pull") return <RealisticPullScene preset={preset} />;
+  if (preset.template === "legs") return <RealisticLegScene preset={preset} />;
+  return <RealisticCardioScene preset={preset} />;
+}
+
 export function ExerciseAnimation({ exerciseName, muscleGroup, animationType, media }: ExerciseAnimationProps) {
   const [mediaFailed, setMediaFailed] = useState(false);
 
@@ -1211,12 +1746,7 @@ export function ExerciseAnimation({ exerciseName, muscleGroup, animationType, me
 
   return (
     <SceneShell exerciseName={exerciseName} muscleGroup={muscleGroup} cue={preset.cue}>
-      {preset.template === "standing" ? <StandingScene preset={preset} /> : null}
-      {preset.template === "bench" ? <BenchScene preset={preset} /> : null}
-      {preset.template === "floor" ? <FloorScene preset={preset} /> : null}
-      {preset.template === "pull" ? <PullScene preset={preset} /> : null}
-      {preset.template === "legs" ? <LegScene preset={preset} /> : null}
-      {preset.template === "cardio" ? <CardioScene preset={preset} /> : null}
+      <RealisticScene preset={preset} />
       <motion.g animate={{ opacity: [0.38, 1, 0.38], scale: [0.96, 1.04, 0.96] }} transition={loop}>
         <foreignObject x="300" y="202" width="42" height="42">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-rival-green/30 bg-rival-green/10 text-rival-green">
