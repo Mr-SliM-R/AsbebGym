@@ -1,0 +1,9 @@
+node_modules/
+client/dist/
+client/*.d.ts
+client/*.js
+server/dist/
+server/data/*.sqlite
+*.tsbuildinfo
+*.log
+.wrangler/

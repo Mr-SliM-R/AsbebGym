@@ -1,0 +1,34 @@
+import { Shield } from "lucide-react";
+import type { Rank } from "../types";
+import { ProgressBar } from "./ProgressBar";
+
+type RankBadgeProps = {
+  rank: Rank;
+  compact?: boolean;
+};
+
+export function RankBadge({ rank, compact = false }: RankBadgeProps) {
+  return (
+    <div className={compact ? "inline-flex items-center gap-2" : "surface-panel p-4"}>
+      <div
+        className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/10"
+        style={{ backgroundColor: `${rank.color}22`, color: rank.color }}
+      >
+        <Shield className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-bold text-white">{rank.name}</div>
+        {!compact ? (
+          <>
+            <div className="mt-1 text-xs text-slate-400">
+              {rank.pointsToNext > 0 ? `${rank.pointsToNext} points to ${rank.nextRank}` : "Top rank reached"}
+            </div>
+            <div className="mt-3">
+              <ProgressBar value={rank.progress} color="cyan" />
+            </div>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
