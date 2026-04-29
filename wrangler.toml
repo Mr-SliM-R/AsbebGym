@@ -1,4 +1,4 @@
-name = "gym-rival"
+name = "gymrival"
 main = "cloudflare/worker.ts"
 compatibility_date = "2026-04-29"
 
