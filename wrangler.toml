@@ -5,7 +5,7 @@ compatibility_date = "2026-04-29"
 [[d1_databases]]
 binding = "DB"
 database_name = "gym-rival-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "20f77d65-a377-4e4e-86f7-7d843efd8bfe"
 
 [assets]
 directory = "./client/dist"
