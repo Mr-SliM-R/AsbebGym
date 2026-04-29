@@ -8,6 +8,8 @@ import {
   UserCircle
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { useI18n } from "../i18n";
+import { LanguageToggle } from "./LanguageToggle";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -24,6 +26,8 @@ type SidebarProps = {
 };
 
 export function Sidebar({ open, onClose }: SidebarProps) {
+  const { t } = useI18n();
+
   return (
     <>
       <div
@@ -41,8 +45,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </span>
           <div>
             <div className="text-sm font-black text-white">Gym Rival</div>
-            <div className="text-xs text-slate-500">Two-player arena</div>
+            <div className="text-xs text-slate-500">{t("Two-player arena")}</div>
           </div>
+        </div>
+        <div className="mb-4 sm:hidden">
+          <LanguageToggle />
         </div>
         <nav className="space-y-2">
           {navItems.map((item) => {
@@ -61,7 +68,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 }
               >
                 <Icon className="h-5 w-5" />
-                {item.label}
+                {t(item.label)}
               </NavLink>
             );
           })}

@@ -6,6 +6,7 @@ type AuthContextValue = {
   user: User | null;
   login: (username: string) => Promise<void>;
   logout: () => void;
+  updateUser: (user: User) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -40,6 +41,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout: () => {
         setUser(null);
         localStorage.removeItem(storageKey);
+      },
+      updateUser: (nextUser: User) => {
+        setUser(nextUser);
+        localStorage.setItem(storageKey, JSON.stringify(nextUser));
       }
     }),
     [user]

@@ -26,7 +26,7 @@ seedDatabase();
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "3mb" }));
 
 const db = getDatabase();
 
@@ -521,11 +521,29 @@ app.post("/api/auth/login", (request, response) => {
     .get(username) as Row | undefined;
 
   if (!row) {
-    response.status(401).json({ message: "Only Slim and Friend can log in." });
+    response.status(401).json({ message: "Only Slim, Adel, and Saber can log in." });
     return;
   }
 
   response.json({ user: mapUser(row) });
+});
+
+app.patch("/api/users/:userId/avatar", (request, response) => {
+  const userId = Number(request.params.userId);
+  const avatar = String(request.body?.avatar ?? "").trim();
+
+  if (!getUserById(userId)) {
+    response.status(404).json({ message: "User not found." });
+    return;
+  }
+
+  if (!avatar || avatar.length > 2_200_000 || !/^(data:image\/|https?:\/\/|\/|[A-Za-z0-9]{1,3}$)/i.test(avatar)) {
+    response.status(400).json({ message: "Invalid profile picture." });
+    return;
+  }
+
+  db.prepare("UPDATE users SET avatar = ? WHERE id = ?").run(avatar, userId);
+  response.json({ user: getUserById(userId) });
 });
 
 app.get("/api/meta", (_request, response) => {
@@ -561,6 +579,7 @@ app.get("/api/dashboard/:userId", (request, response) => {
        FROM users u
        JOIN user_stats s ON s.user_id = u.id
        WHERE u.id != ?
+       ORDER BY s.total_points DESC
        LIMIT 1`
     )
     .get(userId) as Row | undefined;

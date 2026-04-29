@@ -1,4 +1,5 @@
 import { Shield } from "lucide-react";
+import { useI18n } from "../i18n";
 import type { Rank } from "../types";
 import { ProgressBar } from "./ProgressBar";
 
@@ -8,6 +9,8 @@ type RankBadgeProps = {
 };
 
 export function RankBadge({ rank, compact = false }: RankBadgeProps) {
+  const { t } = useI18n();
+
   return (
     <div className={compact ? "inline-flex items-center gap-2" : "surface-panel p-4"}>
       <div
@@ -17,11 +20,13 @@ export function RankBadge({ rank, compact = false }: RankBadgeProps) {
         <Shield className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-bold text-white">{rank.name}</div>
+        <div className="text-sm font-bold text-white">{t(rank.name)}</div>
         {!compact ? (
           <>
             <div className="mt-1 text-xs text-slate-400">
-              {rank.pointsToNext > 0 ? `${rank.pointsToNext} points to ${rank.nextRank}` : "Top rank reached"}
+              {rank.pointsToNext > 0
+                ? t("{points} points to {rank}", { points: rank.pointsToNext, rank: t(rank.nextRank) })
+                : t("Top rank reached")}
             </div>
             <div className="mt-3">
               <ProgressBar value={rank.progress} color="cyan" />

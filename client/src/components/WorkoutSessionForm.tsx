@@ -3,6 +3,7 @@ import { Check, Plus, Save, Search, Trash2, Trophy } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api";
 import { getExerciseMedia } from "../animationMedia";
+import { useI18n } from "../i18n";
 import type { Exercise, SetEntry, User } from "../types";
 import { ExerciseAnimation } from "./ExerciseAnimation";
 
@@ -40,6 +41,7 @@ function createDraft(exercise: Exercise): DraftEntry {
 }
 
 export function WorkoutSessionForm({ user, exercises, categories, initialExerciseId, onSaved }: WorkoutSessionFormProps) {
+  const { t } = useI18n();
   const [selectedGroup, setSelectedGroup] = useState("All");
   const [search, setSearch] = useState("");
   const [entries, setEntries] = useState<DraftEntry[]>([]);
@@ -126,10 +128,13 @@ export function WorkoutSessionForm({ user, exercises, categories, initialExercis
 
       setEntries([]);
       setNotes("");
-      setMessage(`Workout saved: +${result.totalPoints} points, ${result.totalCalories} estimated calories.`);
+      setMessage(t("Workout saved: +{points} points, {calories} estimated calories.", {
+        points: result.totalPoints,
+        calories: result.totalCalories
+      }));
       onSaved?.(result);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Workout could not be saved.");
+      setMessage(error instanceof Error ? t(error.message) : t("Workout could not be saved."));
     } finally {
       setSaving(false);
     }
@@ -145,13 +150,13 @@ export function WorkoutSessionForm({ user, exercises, categories, initialExercis
               className="field pl-10"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search exercises"
+              placeholder={t("Search exercises")}
             />
           </label>
           <select className="field sm:max-w-48" value={selectedGroup} onChange={(event) => setSelectedGroup(event.target.value)}>
-            <option>All</option>
+            <option value="All">{t("All")}</option>
             {categories.map((category) => (
-              <option key={category}>{category}</option>
+              <option key={category} value={category}>{t(category)}</option>
             ))}
           </select>
         </div>
@@ -167,7 +172,7 @@ export function WorkoutSessionForm({ user, exercises, categories, initialExercis
               <div className="min-w-0">
                 <div className="font-bold text-white">{exercise.name}</div>
                 <div className="mt-1 text-xs text-slate-500">
-                  {exercise.muscleGroup} - {exercise.recommendedSets} x {exercise.recommendedReps}
+                  {t(exercise.muscleGroup)} - {exercise.recommendedSets} x {exercise.recommendedReps}
                 </div>
               </div>
               <span className="icon-button h-9 w-9">
@@ -182,19 +187,19 @@ export function WorkoutSessionForm({ user, exercises, categories, initialExercis
         <div className="surface-panel p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-xl font-black text-white">Workout Session</h2>
-              <p className="mt-1 text-sm text-slate-500">{entries.length} selected exercises</p>
+              <h2 className="text-xl font-black text-white">{t("Workout Session")}</h2>
+              <p className="mt-1 text-sm text-slate-500">{entries.length} {t("Selected exercises")}</p>
             </div>
             <button className="neon-button" type="button" onClick={saveWorkout} disabled={saving || entries.length === 0}>
               <Save className="h-4 w-4" />
-              {saving ? "Saving" : "Save Workout"}
+              {saving ? t("Saving") : t("Save Workout")}
             </button>
           </div>
           <textarea
             className="field mt-4 min-h-24 resize-y"
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
-            placeholder="Workout notes"
+            placeholder={t("Workout notes")}
           />
           {message ? (
             <div className="mt-4 rounded-lg border border-rival-cyan/30 bg-rival-cyan/10 px-4 py-3 text-sm font-semibold text-rival-cyan">
@@ -227,12 +232,12 @@ export function WorkoutSessionForm({ user, exercises, categories, initialExercis
                     <div>
                       <h3 className="text-lg font-black text-white">{entry.exercise.name}</h3>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        <span className="chip">{entry.exercise.muscleGroup}</span>
-                        <span className="chip">{entry.exercise.difficulty}</span>
+                        <span className="chip">{t(entry.exercise.muscleGroup)}</span>
+                        <span className="chip">{t(entry.exercise.difficulty)}</span>
                         <span className="chip">{entry.exercise.equipment}</span>
                       </div>
                     </div>
-                    <button className="icon-button" type="button" onClick={() => removeEntry(entryIndex)} aria-label="Remove exercise">
+                    <button className="icon-button" type="button" onClick={() => removeEntry(entryIndex)} aria-label={t("Remove exercise")}>
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -249,7 +254,7 @@ export function WorkoutSessionForm({ user, exercises, categories, initialExercis
                           />
                         </label>
                         <label className="min-w-0">
-                          <span className="mb-1 block text-xs font-bold text-slate-500">Weight kg</span>
+                          <span className="mb-1 block text-xs font-bold text-slate-500">{t("Weight kg")}</span>
                           <input
                             className="field"
                             type="number"
@@ -259,7 +264,7 @@ export function WorkoutSessionForm({ user, exercises, categories, initialExercis
                           />
                         </label>
                         <label className="min-w-0">
-                          <span className="mb-1 block text-xs font-bold text-slate-500">Reps</span>
+                          <span className="mb-1 block text-xs font-bold text-slate-500">{t("Reps")}</span>
                           <input
                             className="field"
                             type="number"
@@ -268,7 +273,7 @@ export function WorkoutSessionForm({ user, exercises, categories, initialExercis
                             onChange={(event) => updateSet(entryIndex, setIndex, { reps: Number(event.target.value) })}
                           />
                         </label>
-                        <span className="hidden text-sm font-bold text-slate-500 sm:block">Set {setIndex + 1}</span>
+                        <span className="hidden text-sm font-bold text-slate-500 sm:block">{t("Set")} {setIndex + 1}</span>
                       </div>
                     ))}
                   </div>
@@ -276,7 +281,7 @@ export function WorkoutSessionForm({ user, exercises, categories, initialExercis
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <button className="ghost-button" type="button" onClick={() => addSet(entryIndex)}>
                       <Plus className="h-4 w-4" />
-                      Add Set
+                      {t("Add Set")}
                     </button>
                     <label className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-rival-amber/25 bg-rival-amber/10 px-4 text-sm font-bold text-rival-amber">
                       <input
@@ -292,7 +297,7 @@ export function WorkoutSessionForm({ user, exercises, categories, initialExercis
                         className="h-4 w-4 accent-rival-amber"
                       />
                       <Trophy className="h-4 w-4" />
-                      Personal record
+                      {t("Personal record")}
                     </label>
                   </div>
                   <textarea
@@ -303,7 +308,7 @@ export function WorkoutSessionForm({ user, exercises, categories, initialExercis
                         current.map((item, index) => (index === entryIndex ? { ...item, notes: event.target.value } : item))
                       )
                     }
-                    placeholder="Exercise notes"
+                    placeholder={t("Exercise notes")}
                   />
                 </div>
               </div>
@@ -317,8 +322,8 @@ export function WorkoutSessionForm({ user, exercises, categories, initialExercis
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-rival-green/15 text-rival-green">
                 <Plus className="h-6 w-6" />
               </div>
-              <div className="mt-4 text-lg font-black text-white">No exercises selected</div>
-              <div className="mt-2 text-sm text-slate-500">Pick exercises from the list to build this session.</div>
+              <div className="mt-4 text-lg font-black text-white">{t("No exercises selected")}</div>
+              <div className="mt-2 text-sm text-slate-500">{t("Pick exercises from the list to build this session.")}</div>
             </div>
           </div>
         ) : null}

@@ -509,8 +509,25 @@ async function handleApi(request: Request, env: Env, url: URL) {
       username
     );
 
-    if (!row) return json({ message: "Only Slim and Friend can log in." }, { status: 401 });
+    if (!row) return json({ message: "Only Slim, Adel, and Saber can log in." }, { status: 401 });
     return json({ user: mapUser(row) });
+  }
+
+  const avatarMatch = path.match(/^\/api\/users\/(\d+)\/avatar$/);
+  if (request.method === "PATCH" && avatarMatch) {
+    const userId = Number(avatarMatch[1]);
+    const body = (await request.json().catch(() => ({}))) as { avatar?: string };
+    const avatar = String(body.avatar ?? "").trim();
+    const user = await getUserById(env, userId);
+
+    if (!user) return json({ message: "User not found." }, { status: 404 });
+
+    if (!avatar || avatar.length > 2_200_000 || !/^(data:image\/|https?:\/\/|\/|[A-Za-z0-9]{1,3}$)/i.test(avatar)) {
+      return json({ message: "Invalid profile picture." }, { status: 400 });
+    }
+
+    await env.DB.prepare("UPDATE users SET avatar = ? WHERE id = ?").bind(avatar, userId).run();
+    return json({ user: await getUserById(env, userId) });
   }
 
   if (request.method === "GET" && path === "/api/meta") {
@@ -544,6 +561,7 @@ async function handleApi(request: Request, env: Env, url: URL) {
        FROM users u
        JOIN user_stats s ON s.user_id = u.id
        WHERE u.id != ?
+       ORDER BY s.total_points DESC
        LIMIT 1`,
       userId
     );

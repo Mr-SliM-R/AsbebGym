@@ -2,7 +2,7 @@
   "name": "gym-rival",
   "version": "0.1.0",
   "private": true,
-  "description": "A two-player fitness rivalry app with workout tracking, challenges, ranks, and exercise animations.",
+  "description": "A three-user fitness rivalry app with workout tracking, challenges, ranks, and exercise animations.",
   "workspaces": [
     "client",
     "server"
@@ -16,6 +16,7 @@
     "cf:typecheck": "tsc -p cloudflare/tsconfig.json --noEmit",
     "cf:d1:schema": "wrangler d1 execute gym-rival-db --remote --file=cloudflare/schema.sql",
     "cf:d1:seed": "wrangler d1 execute gym-rival-db --remote --file=cloudflare/seed.sql",
+    "cf:d1:users": "wrangler d1 execute gym-rival-db --remote --file=cloudflare/add-users-and-avatars.sql",
     "cf:deploy": "npm run cf:build && npm run cf:typecheck && wrangler deploy"
   },
   "devDependencies": {

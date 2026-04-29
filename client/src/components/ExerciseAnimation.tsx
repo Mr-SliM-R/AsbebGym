@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Activity, Box, Dumbbell, Play } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useI18n } from "../i18n";
 
 export type ExerciseAnimationMedia =
   | { type: "image"; src: string; alt?: string }
@@ -496,15 +497,17 @@ function SceneShell({
   cue: string;
   children: React.ReactNode;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(64,255,154,0.2),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(57,215,255,0.14),transparent_34%),linear-gradient(145deg,#101722,#070a0f)]">
       <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-full border border-white/10 bg-ink-950/75 px-3 py-1 text-xs font-bold text-slate-200">
         <Activity className="h-3.5 w-3.5 text-rival-green" />
-        Original motion
+        {t("Original motion")}
       </div>
       <div className="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-full border border-rival-cyan/20 bg-rival-cyan/10 px-3 py-1 text-xs font-bold text-rival-cyan">
         <Play className="h-3.5 w-3.5 fill-current" />
-        Loop
+        {t("Loop")}
       </div>
       <svg viewBox="0 0 360 260" className="absolute inset-0 h-full w-full" role="img" aria-label={`${exerciseName} animation`}>
         <defs>
@@ -582,7 +585,7 @@ function SceneShell({
       <div className="absolute bottom-4 left-4 z-10 max-w-[72%]">
         <div className="text-sm font-bold text-white">{exerciseName}</div>
         <div className="mt-1 flex flex-wrap gap-2 text-xs font-semibold">
-          <span className="rounded-full border border-white/10 bg-white/[0.055] px-2 py-1 text-slate-300">{muscleGroup}</span>
+          <span className="rounded-full border border-white/10 bg-white/[0.055] px-2 py-1 text-slate-300">{t(muscleGroup)}</span>
           <span className="rounded-full border border-rival-green/20 bg-rival-green/10 px-2 py-1 text-rival-green">{cue}</span>
         </div>
       </div>

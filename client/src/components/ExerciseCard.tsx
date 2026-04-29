@@ -1,6 +1,7 @@
 import { ArrowRight, Dumbbell, Gauge } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getExerciseMedia } from "../animationMedia";
+import { useI18n } from "../i18n";
 import type { Exercise } from "../types";
 import { ExerciseAnimation } from "./ExerciseAnimation";
 
@@ -12,6 +13,8 @@ type ExerciseCardProps = {
 };
 
 export function ExerciseCard({ exercise, compact = false, actionLabel, onAction }: ExerciseCardProps) {
+  const { t } = useI18n();
+
   return (
     <article className="surface-panel overflow-hidden transition hover:border-rival-green/30">
       {!compact ? (
@@ -29,37 +32,37 @@ export function ExerciseCard({ exercise, compact = false, actionLabel, onAction 
             <div className="mt-2 flex flex-wrap gap-2">
               <span className="chip">
                 <Dumbbell className="mr-1.5 h-3.5 w-3.5 text-rival-green" />
-                {exercise.muscleGroup}
+                {t(exercise.muscleGroup)}
               </span>
               <span className="chip">
                 <Gauge className="mr-1.5 h-3.5 w-3.5 text-rival-cyan" />
-                {exercise.difficulty}
+                {t(exercise.difficulty)}
               </span>
             </div>
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <div>
-            <div className="text-xs text-slate-500">Sets</div>
+            <div className="text-xs text-slate-500">{t("Sets")}</div>
             <div className="font-bold text-slate-100">{exercise.recommendedSets}</div>
           </div>
           <div>
-            <div className="text-xs text-slate-500">Reps</div>
+            <div className="text-xs text-slate-500">{t("Reps")}</div>
             <div className="font-bold text-slate-100">{exercise.recommendedReps}</div>
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link className="ghost-button flex-1" to={`/exercises/${exercise.id}`}>
-            Detail
+            {t("Detail")}
             <ArrowRight className="h-4 w-4" />
           </Link>
           {onAction ? (
             <button className="neon-button flex-1" type="button" onClick={onAction}>
-              {actionLabel ?? "Start"}
+              {actionLabel ? t(actionLabel) : t("Start")}
             </button>
           ) : (
             <Link className="neon-button flex-1" to="/tracker" state={{ exerciseId: exercise.id }}>
-              {actionLabel ?? "Start Exercise"}
+              {actionLabel ? t(actionLabel) : t("Start Exercise")}
             </Link>
           )}
         </div>

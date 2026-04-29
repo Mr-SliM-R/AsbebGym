@@ -65,5 +65,10 @@ export const api = {
     }),
   leaderboard: () => apiRequest<LeaderboardEntry[]>("/api/leaderboard"),
   challenges: (userId: number) => apiRequest<Challenge[]>(`/api/challenges/${userId}`),
-  profile: (userId: number) => apiRequest<ProfileData>(`/api/profile/${userId}`)
+  profile: (userId: number) => apiRequest<ProfileData>(`/api/profile/${userId}`),
+  updateAvatar: (userId: number, avatar: string) =>
+    apiRequest<{ user: User }>(`/api/users/${userId}/avatar`, {
+      method: "PATCH",
+      body: JSON.stringify({ avatar })
+    })
 };

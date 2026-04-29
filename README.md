@@ -1,13 +1,15 @@
 # Gym Rival
 
-A modern two-player fitness web app for tracking workouts, browsing exercises by muscle group, watching placeholder exercise animations, and competing with ranks, badges, points, streaks, and weekly challenges.
+A modern three-user fitness web app for tracking workouts, browsing exercises by muscle group, watching placeholder exercise animations, and competing with ranks, badges, points, streaks, and weekly challenges.
 
 ## Stack
 
 - Frontend: React, TypeScript, Tailwind CSS, Framer Motion
 - Backend: Node.js, Express, TypeScript
 - Database: local SQLite database using Node's built-in `node:sqlite`
-- Auth: simple fixed-user login for `Slim` and `Friend`
+- Auth: simple fixed-user login for `Slim`, `Adel`, and `Saber`
+- Language: English and French UI toggle
+- Profiles: each user can upload a profile picture
 
 ## Requirements
 
@@ -56,6 +58,12 @@ npm run cf:deploy
 
 Cloudflare serves the React app and routes `/api/*` to the Worker API.
 
+For an existing Cloudflare D1 database that already has data, run the non-destructive user sync instead of reseeding:
+
+```bash
+npm run cf:d1:users
+```
+
 ## Reset Seed Data
 
 The database is created automatically at `server/data/gym-rival.sqlite`.
@@ -93,6 +101,7 @@ Gym Rival/
 
 - `GET /api/health`
 - `GET /api/users`
+- `PATCH /api/users/:userId/avatar`
 - `POST /api/auth/login`
 - `GET /api/meta`
 - `GET /api/dashboard/:userId`

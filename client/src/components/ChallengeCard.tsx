@@ -1,4 +1,5 @@
 import { CheckCircle2, Flame, Target } from "lucide-react";
+import { useI18n } from "../i18n";
 import type { Challenge } from "../types";
 import { ProgressBar } from "./ProgressBar";
 
@@ -7,6 +8,7 @@ type ChallengeCardProps = {
 };
 
 export function ChallengeCard({ challenge }: ChallengeCardProps) {
+  const { t } = useI18n();
   const color = challenge.completed ? "green" : challenge.metric === "calories" ? "rose" : "cyan";
 
   return (
@@ -16,8 +18,8 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
           <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-rival-amber/15 text-rival-amber">
             {challenge.completed ? <CheckCircle2 className="h-5 w-5" /> : <Target className="h-5 w-5" />}
           </div>
-          <h3 className="text-lg font-black text-white">{challenge.title}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-400">{challenge.description}</p>
+          <h3 className="text-lg font-black text-white">{t(challenge.title)}</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-400">{t(challenge.description)}</p>
         </div>
         <span className="chip shrink-0">
           <Flame className="mr-1.5 h-3.5 w-3.5 text-rival-rose" />+{challenge.points}
@@ -33,9 +35,9 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
       </div>
       <div className="mt-4 flex items-center justify-between text-xs font-bold">
         <span className={challenge.completed ? "text-rival-green" : "text-slate-500"}>
-          {challenge.completed ? "Completed" : "In progress"}
+          {challenge.completed ? t("Completed") : t("In progress")}
         </span>
-        <span className="text-slate-500">{challenge.muscleGroup ?? "All training"}</span>
+        <span className="text-slate-500">{t(challenge.muscleGroup ?? "All training")}</span>
       </div>
     </article>
   );

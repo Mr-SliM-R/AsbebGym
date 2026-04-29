@@ -4,10 +4,12 @@ import { api } from "../api";
 import { useAuth } from "../auth";
 import { ErrorState, LoadingState } from "../components/PageState";
 import { WorkoutSessionForm } from "../components/WorkoutSessionForm";
+import { useI18n } from "../i18n";
 import type { Exercise, MetaData } from "../types";
 
 export function WorkoutTrackerPage() {
   const { user } = useAuth();
+  const { t } = useI18n();
   const location = useLocation();
   const initialExerciseId = Number((location.state as { exerciseId?: number } | null)?.exerciseId ?? 0) || undefined;
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -26,14 +28,14 @@ export function WorkoutTrackerPage() {
   }, []);
 
   if (!user) return null;
-  if (error) return <ErrorState message={error} />;
-  if (loading || !meta) return <LoadingState label="Loading tracker" />;
+  if (error) return <ErrorState message={t(error)} />;
+  if (loading || !meta) return <LoadingState label={t("Loading tracker")} />;
 
   return (
     <div className="space-y-6">
       <section className="app-panel p-5 sm:p-6">
-        <h1 className="text-3xl font-black text-white">Workout Tracker</h1>
-        <p className="mt-2 text-sm text-slate-400">Log sets, reps, weight, notes, and personal records.</p>
+        <h1 className="text-3xl font-black text-white">{t("Workout Tracker")}</h1>
+        <p className="mt-2 text-sm text-slate-400">{t("Log sets, reps, weight, notes, and personal records.")}</p>
       </section>
       <WorkoutSessionForm user={user} exercises={exercises} categories={meta.categories} initialExerciseId={initialExerciseId} />
     </div>

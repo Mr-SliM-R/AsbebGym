@@ -43,10 +43,17 @@ const users = [
   },
   {
     id: 2,
-    username: "Friend",
-    avatar: "F",
+    username: "Adel",
+    avatar: "A",
     weightGoal: "Strength and conditioning",
     favoriteMuscleGroup: "Legs"
+  },
+  {
+    id: 3,
+    username: "Saber",
+    avatar: "S",
+    weightGoal: "Power and athleticism",
+    favoriteMuscleGroup: "Back"
   }
 ];
 
@@ -912,11 +919,52 @@ function syncExerciseAnimationMetadata(database: DatabaseSync) {
   }
 }
 
+function syncUsers(database: DatabaseSync) {
+  const upsertUser = database.prepare(
+    `INSERT INTO users (id, username, avatar, weight_goal, favorite_muscle_group)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       username = excluded.username,
+       weight_goal = excluded.weight_goal,
+       favorite_muscle_group = excluded.favorite_muscle_group,
+       avatar = CASE
+         WHEN users.avatar = '' OR users.avatar = 'F' OR users.avatar = users.username THEN excluded.avatar
+         ELSE users.avatar
+       END`
+  );
+  const insertStats = database.prepare(
+    "INSERT OR IGNORE INTO user_stats (user_id, total_points, weekly_points, workouts_completed, current_streak) VALUES (?, ?, ?, ?, ?)"
+  );
+  const insertUserChallenge = database.prepare(
+    "INSERT OR IGNORE INTO user_challenges (user_id, challenge_id, progress, completed) VALUES (?, ?, ?, ?)"
+  );
+  const challengeRows = database.prepare("SELECT id, target FROM challenges ORDER BY id").all() as Array<{ id: number; target: number }>;
+
+  for (const user of users) {
+    upsertUser.run(user.id, user.username, user.avatar, user.weightGoal, user.favoriteMuscleGroup);
+  }
+
+  insertStats.run(1, 920, 280, 12, 4);
+  insertStats.run(2, 860, 330, 11, 3);
+  insertStats.run(3, 720, 210, 9, 2);
+
+  for (const user of users) {
+    const baseProgress =
+      user.id === 1 ? [3, 1, 68, 720, 2] : user.id === 2 ? [4, 2, 84, 860, 1] : [2, 1, 45, 520, 1];
+
+    for (const [index, challenge] of challengeRows.entries()) {
+      const progress = baseProgress[index] ?? 0;
+      insertUserChallenge.run(user.id, challenge.id, progress, progress >= Number(challenge.target) ? 1 : 0);
+    }
+  }
+}
+
 export function seedDatabase() {
   const database = getDatabase();
   const userCount = database.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number };
 
   if (userCount.count > 0) {
+    syncUsers(database);
     syncExerciseAnimationMetadata(database);
     return;
   }
@@ -963,6 +1011,7 @@ export function seedDatabase() {
 
     insertStats.run(1, 920, 280, 12, 4);
     insertStats.run(2, 860, 330, 11, 3);
+    insertStats.run(3, 720, 210, 9, 2);
 
     for (const exercise of exercises) {
       insertExercise.run(
@@ -993,7 +1042,8 @@ export function seedDatabase() {
 
     for (const user of users) {
       for (let challengeId = 1; challengeId <= challenges.length; challengeId += 1) {
-        const baseProgress = user.id === 1 ? [3, 1, 68, 720, 2] : [4, 2, 84, 860, 1];
+        const baseProgress =
+          user.id === 1 ? [3, 1, 68, 720, 2] : user.id === 2 ? [4, 2, 84, 860, 1] : [2, 1, 45, 520, 1];
         const progress = baseProgress[challengeId - 1];
         insertUserChallenge.run(user.id, challengeId, progress, progress >= Number(challenges[challengeId - 1][4]) ? 1 : 0);
       }
@@ -1006,6 +1056,8 @@ export function seedDatabase() {
     insertUserBadge.run(2, 1, earnedAt);
     insertUserBadge.run(2, 2, earnedAt);
     insertUserBadge.run(2, 8, earnedAt);
+    insertUserBadge.run(3, 1, earnedAt);
+    insertUserBadge.run(3, 4, earnedAt);
 
     const sampleWorkouts = [
       {
@@ -1052,6 +1104,17 @@ export function seedDatabase() {
           { exerciseId: 11, sets: [{ weight: 0, reps: 8, completed: true }, { weight: 0, reps: 6, completed: true }], pr: false },
           { exerciseId: 13, sets: [{ weight: 70, reps: 8, completed: true }, { weight: 70, reps: 8, completed: true }], pr: false },
           { exerciseId: 20, sets: [{ weight: 18, reps: 12, completed: true }], pr: false }
+        ]
+      },
+      {
+        userId: 3,
+        dateOffset: -3,
+        notes: "Pull day with clean reps.",
+        points: 105,
+        calories: 215,
+        entries: [
+          { exerciseId: 11, sets: [{ weight: 0, reps: 7, completed: true }, { weight: 0, reps: 6, completed: true }], pr: true },
+          { exerciseId: 14, sets: [{ weight: 62.5, reps: 10, completed: true }, { weight: 62.5, reps: 9, completed: true }], pr: false }
         ]
       }
     ];

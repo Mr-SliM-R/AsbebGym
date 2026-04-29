@@ -31,6 +31,12 @@ npm run cf:d1:schema
 npm run cf:d1:seed
 ```
 
+For an existing D1 database, use the non-destructive user sync instead of reseeding:
+
+```bash
+npm run cf:d1:users
+```
+
 5. Deploy:
 
 ```bash
