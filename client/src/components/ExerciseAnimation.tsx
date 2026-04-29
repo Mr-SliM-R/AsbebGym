@@ -544,6 +544,20 @@ function SceneShell({
             <stop offset="60%" stopColor="#d89464" stopOpacity="0.2" />
             <stop offset="100%" stopColor="#6a3728" stopOpacity="0.2" />
           </radialGradient>
+          <linearGradient id="fiberGradient" x1="0" x2="1">
+            <stop offset="0%" stopColor="#fff0dd" stopOpacity="0.08" />
+            <stop offset="48%" stopColor="#fff0dd" stopOpacity="0.72" />
+            <stop offset="100%" stopColor="#fff0dd" stopOpacity="0.08" />
+          </linearGradient>
+          <linearGradient id="plateGradient" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor="#334155" />
+            <stop offset="45%" stopColor="#111827" />
+            <stop offset="100%" stopColor="#020617" />
+          </linearGradient>
+          <radialGradient id="jointGlow" cx="35%" cy="25%" r="70%">
+            <stop offset="0%" stopColor="#fff0dd" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="#d89464" stopOpacity="0.12" />
+          </radialGradient>
           <linearGradient id="gearGradient" x1="0" x2="1">
             <stop offset="0%" stopColor="#ffc857" />
             <stop offset="100%" stopColor="#ff4f7b" />
@@ -555,9 +569,15 @@ function SceneShell({
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+          <filter id="heavyShadow" x="-40%" y="-40%" width="180%" height="180%">
+            <feDropShadow dx="0" dy="8" stdDeviation="5" floodColor="#02040a" floodOpacity="0.55" />
+          </filter>
         </defs>
+        <Atmosphere muscleGroup={muscleGroup} />
         <Grid />
         {children}
+        <TargetMusclePulse muscleGroup={muscleGroup} />
+        <RepMeter />
       </svg>
       <div className="absolute bottom-4 left-4 z-10 max-w-[72%]">
         <div className="text-sm font-bold text-white">{exerciseName}</div>
@@ -589,13 +609,186 @@ function Grid() {
   );
 }
 
+function Atmosphere({ muscleGroup }: { muscleGroup: string }) {
+  const color = getMuscleColor(muscleGroup);
+  const areas = getMuscleAreas(muscleGroup);
+
+  return (
+    <g>
+      <motion.ellipse
+        cx="180"
+        cy="210"
+        rx="112"
+        ry="18"
+        fill="#02040a"
+        opacity="0.38"
+        animate={{ rx: [96, 118, 96], opacity: [0.26, 0.42, 0.26] }}
+        transition={loop}
+      />
+      <motion.circle
+        cx="296"
+        cy="66"
+        r="38"
+        fill={color}
+        opacity="0.08"
+        animate={{ r: [32, 43, 32], opacity: [0.05, 0.13, 0.05] }}
+        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <g opacity="0.72">
+        {areas.map((area) => (
+          <motion.ellipse
+            key={`${area.cx}-${area.cy}`}
+            cx={area.cx}
+            cy={area.cy}
+            rx={area.rx}
+            ry={area.ry}
+            fill={color}
+            opacity="0.16"
+            filter="url(#softGlow)"
+            animate={{ opacity: [0.08, 0.26, 0.08], scale: [0.92, 1.08, 0.92] }}
+            transition={{ duration: 1.65, repeat: Infinity, ease: "easeInOut" }}
+            style={{ transformOrigin: `${area.cx}px ${area.cy}px` }}
+          />
+        ))}
+      </g>
+      {[0, 1, 2].map((index) => (
+        <motion.circle
+          key={index}
+          cx={82 + index * 94}
+          cy={84 + index * 8}
+          r="2.4"
+          fill="#ffffff"
+          opacity="0.2"
+          animate={{ y: [0, -18, 0], opacity: [0, 0.35, 0] }}
+          transition={{ duration: 1.8 + index * 0.25, repeat: Infinity, ease: "easeInOut", delay: index * 0.22 }}
+        />
+      ))}
+    </g>
+  );
+}
+
+function getMuscleColor(muscleGroup: string) {
+  const colors: Record<string, string> = {
+    Legs: "#40ff9a",
+    Chest: "#ff4f7b",
+    Back: "#39d7ff",
+    Shoulders: "#ffc857",
+    Biceps: "#a78bfa",
+    Triceps: "#f97316",
+    Abs: "#22d3ee",
+    Cardio: "#ef4444",
+    "Full Body": "#40ff9a"
+  };
+
+  return colors[muscleGroup] ?? "#40ff9a";
+}
+
+function getMuscleAreas(muscleGroup: string) {
+  const areas: Record<string, Array<{ cx: number; cy: number; rx: number; ry: number }>> = {
+    Legs: [
+      { cx: 158, cy: 178, rx: 24, ry: 42 },
+      { cx: 206, cy: 178, rx: 24, ry: 42 }
+    ],
+    Chest: [{ cx: 180, cy: 122, rx: 58, ry: 32 }],
+    Back: [{ cx: 180, cy: 124, rx: 64, ry: 36 }],
+    Shoulders: [
+      { cx: 145, cy: 104, rx: 30, ry: 24 },
+      { cx: 215, cy: 104, rx: 30, ry: 24 }
+    ],
+    Biceps: [
+      { cx: 142, cy: 132, rx: 28, ry: 26 },
+      { cx: 218, cy: 132, rx: 28, ry: 26 }
+    ],
+    Triceps: [
+      { cx: 148, cy: 122, rx: 30, ry: 28 },
+      { cx: 212, cy: 122, rx: 30, ry: 28 }
+    ],
+    Abs: [{ cx: 180, cy: 148, rx: 36, ry: 42 }],
+    Cardio: [{ cx: 180, cy: 138, rx: 82, ry: 70 }],
+    "Full Body": [{ cx: 180, cy: 140, rx: 90, ry: 78 }]
+  };
+
+  return areas[muscleGroup] ?? areas["Full Body"];
+}
+
+function TargetMusclePulse({ muscleGroup }: { muscleGroup: string }) {
+  const color = getMuscleColor(muscleGroup);
+  const areas = getMuscleAreas(muscleGroup);
+
+  return (
+    <g pointerEvents="none">
+      {areas.map((area, index) => (
+        <motion.g
+          key={`${area.cx}-${area.cy}-${index}`}
+          animate={{ opacity: [0.2, 0.72, 0.2] }}
+          transition={{ duration: 1.65, repeat: Infinity, ease: "easeInOut", delay: index * 0.08 }}
+        >
+          <motion.ellipse
+            cx={area.cx}
+            cy={area.cy}
+            rx={area.rx * 0.74}
+            ry={area.ry * 0.74}
+            fill={color}
+            opacity="0.1"
+            filter="url(#softGlow)"
+            animate={{ scale: [0.92, 1.04, 0.92] }}
+            transition={loop}
+            style={{ transformOrigin: `${area.cx}px ${area.cy}px` }}
+          />
+          <motion.ellipse
+            cx={area.cx}
+            cy={area.cy}
+            rx={area.rx * 0.68}
+            ry={area.ry * 0.68}
+            fill="none"
+            stroke={color}
+            strokeOpacity="0.58"
+            strokeWidth="1.5"
+            strokeDasharray="6 7"
+            animate={{ rotate: [0, 18, 0], strokeDashoffset: [0, -26, 0] }}
+            transition={loop}
+            style={{ transformOrigin: `${area.cx}px ${area.cy}px` }}
+          />
+        </motion.g>
+      ))}
+    </g>
+  );
+}
+
+function RepMeter() {
+  return (
+    <g transform="translate(24 228)">
+      <rect x="0" y="0" width="84" height="8" rx="4" fill="#ffffff" opacity="0.08" />
+      <motion.rect
+        x="0"
+        y="0"
+        height="8"
+        rx="4"
+        fill="url(#bodyGradient)"
+        animate={{ width: [8, 84, 8] }}
+        transition={loop}
+      />
+      <motion.circle
+        cx="92"
+        cy="4"
+        r="4"
+        fill="#40ff9a"
+        animate={{ opacity: [0.35, 1, 0.35], scale: [0.9, 1.25, 0.9] }}
+        transition={loop}
+      />
+    </g>
+  );
+}
+
 function Joint({ x, y }: { x: number | number[]; y: number | number[] }) {
   return (
     <motion.circle
-      r="4"
-      fill="#05070b"
+      r="5"
+      fill="url(#jointGlow)"
       stroke="#40ff9a"
-      strokeWidth="2"
+      strokeOpacity="0.62"
+      strokeWidth="1.5"
+      filter="url(#softGlow)"
       animate={{ cx: x, cy: y }}
       transition={loop}
     />
@@ -746,22 +939,30 @@ function StandingEquipment({
 
 function DumbbellAt({ point }: { point: PointFrames }) {
   return (
-    <motion.g animate={{ x: point.x, y: point.y }} transition={loop}>
-      <rect x="-15" y="-4" width="30" height="8" rx="4" fill="#e5edf8" />
-      <rect x="-21" y="-8" width="8" height="16" rx="3" fill="#ff4f7b" />
-      <rect x="13" y="-8" width="8" height="16" rx="3" fill="#ffc857" />
+    <motion.g animate={{ x: point.x, y: point.y, rotate: [-7, 7, -7] }} transition={loop} filter="url(#heavyShadow)">
+      <ellipse cx="0" cy="10" rx="25" ry="5" fill="#020617" opacity="0.38" />
+      <rect x="-16" y="-4.5" width="32" height="9" rx="4.5" fill="url(#metalGradient)" stroke="#ffffff" strokeOpacity="0.26" />
+      <rect x="-25" y="-11" width="10" height="22" rx="4" fill="url(#plateGradient)" stroke="#ff4f7b" strokeOpacity="0.65" />
+      <rect x="15" y="-11" width="10" height="22" rx="4" fill="url(#plateGradient)" stroke="#ffc857" strokeOpacity="0.65" />
+      <rect x="-31" y="-8" width="7" height="16" rx="3" fill="#ff4f7b" opacity="0.9" />
+      <rect x="24" y="-8" width="7" height="16" rx="3" fill="#ffc857" opacity="0.9" />
+      <path d="M-12 -2 H12" stroke="#ffffff" strokeOpacity="0.45" strokeLinecap="round" strokeWidth="1.5" />
     </motion.g>
   );
 }
 
 function Barbell({ y }: { y: number | number[] }) {
   return (
-    <motion.g animate={{ y }} transition={loop}>
-      <line x1="116" y1="0" x2="244" y2="0" stroke="#e5edf8" strokeLinecap="round" strokeWidth="7" />
-      <rect x="96" y="-17" width="16" height="34" rx="4" fill="#ff4f7b" />
-      <rect x="248" y="-17" width="16" height="34" rx="4" fill="#ffc857" />
-      <rect x="78" y="-13" width="14" height="26" rx="4" fill="#ff4f7b" opacity="0.82" />
-      <rect x="268" y="-13" width="14" height="26" rx="4" fill="#ffc857" opacity="0.82" />
+    <motion.g animate={{ y }} transition={loop} filter="url(#heavyShadow)">
+      <ellipse cx="180" cy="17" rx="102" ry="7" fill="#020617" opacity="0.26" />
+      <line x1="112" y1="0" x2="248" y2="0" stroke="#05070b" strokeOpacity="0.45" strokeLinecap="round" strokeWidth="11" />
+      <line x1="112" y1="0" x2="248" y2="0" stroke="url(#metalGradient)" strokeLinecap="round" strokeWidth="7" />
+      <line x1="126" y1="-2" x2="234" y2="-2" stroke="#ffffff" strokeOpacity="0.42" strokeLinecap="round" strokeWidth="1.6" />
+      <rect x="94" y="-18" width="17" height="36" rx="5" fill="url(#plateGradient)" stroke="#ff4f7b" strokeOpacity="0.68" />
+      <rect x="249" y="-18" width="17" height="36" rx="5" fill="url(#plateGradient)" stroke="#ffc857" strokeOpacity="0.68" />
+      <rect x="76" y="-14" width="15" height="28" rx="5" fill="#ff4f7b" opacity="0.88" />
+      <rect x="269" y="-14" width="15" height="28" rx="5" fill="#ffc857" opacity="0.88" />
+      <path d="M101 -11 V11 M256 -11 V11" stroke="#ffffff" strokeOpacity="0.16" strokeLinecap="round" strokeWidth="2" />
     </motion.g>
   );
 }
@@ -820,16 +1021,8 @@ function BenchEquipment({ preset }: { preset: BenchPreset }) {
   if (preset.equipment === "dumbbells") {
     return (
       <g>
-        <motion.g animate={{ x: preset.handX ?? [142, 136, 142], y: preset.pressY }} transition={loop}>
-          <rect x="-16" y="-5" width="32" height="10" rx="5" fill="#e5edf8" />
-          <rect x="-24" y="-10" width="8" height="20" rx="3" fill="#ff4f7b" />
-          <rect x="16" y="-10" width="8" height="20" rx="3" fill="#ffc857" />
-        </motion.g>
-        <motion.g animate={{ x: [218, 224, 218], y: preset.pressY }} transition={loop}>
-          <rect x="-16" y="-5" width="32" height="10" rx="5" fill="#e5edf8" />
-          <rect x="-24" y="-10" width="8" height="20" rx="3" fill="#ff4f7b" />
-          <rect x="16" y="-10" width="8" height="20" rx="3" fill="#ffc857" />
-        </motion.g>
+        <DumbbellAt point={{ x: preset.handX ?? [142, 136, 142], y: preset.pressY }} />
+        <DumbbellAt point={{ x: [218, 224, 218], y: preset.pressY }} />
       </g>
     );
   }
@@ -1225,24 +1418,42 @@ function AnatomyLine({
   fill?: string;
   transition?: typeof loop | typeof quickLoop;
 }) {
+  const mainPulse = [width * 0.96, width * 1.08, width * 0.96];
+  const fiberWidth = Math.max(1.8, width * 0.16);
+  const highlightWidth = Math.max(2.4, width * 0.22);
+
   return (
-    <g>
+    <g filter="url(#heavyShadow)">
       <motion.line
         animate={{ x1, y1, x2, y2 }}
         transition={transition}
         stroke="#05070b"
-        strokeOpacity="0.34"
+        strokeOpacity="0.42"
         strokeLinecap="round"
-        strokeWidth={width + 7}
+        strokeWidth={width + 8}
       />
-      <motion.line animate={{ x1, y1, x2, y2 }} transition={transition} stroke={fill} strokeLinecap="round" strokeWidth={width} />
+      <motion.line
+        animate={{ x1, y1, x2, y2, strokeWidth: mainPulse }}
+        transition={transition}
+        stroke={fill}
+        strokeLinecap="round"
+        strokeWidth={width}
+      />
+      <motion.line
+        animate={{ x1, y1, x2, y2, strokeDashoffset: [0, -18, 0] }}
+        transition={transition}
+        stroke="url(#fiberGradient)"
+        strokeDasharray={`${Math.max(7, width * 0.48)} ${Math.max(9, width * 0.58)}`}
+        strokeLinecap="round"
+        strokeWidth={fiberWidth}
+      />
       <motion.line
         animate={{ x1, y1, x2, y2 }}
         transition={transition}
         stroke="#fff0dd"
-        strokeOpacity="0.38"
+        strokeOpacity="0.42"
         strokeLinecap="round"
-        strokeWidth={Math.max(2, width * 0.18)}
+        strokeWidth={highlightWidth}
       />
     </g>
   );
@@ -1250,49 +1461,72 @@ function AnatomyLine({
 
 function AvatarHead({ x, y, rotate = [0, 0, 0], scale = 1 }: { x: MotionNumber; y: MotionNumber; rotate?: MotionNumber; scale?: number }) {
   return (
-    <motion.g animate={{ x, y, rotate, scale }} transition={loop} style={{ transformOrigin: "0px 0px" }}>
+    <motion.g animate={{ x, y, rotate, scale }} transition={loop} style={{ transformOrigin: "0px 0px" }} filter="url(#heavyShadow)">
+      <ellipse cx="0" cy="20" rx="8" ry="7" fill="#9f6544" opacity="0.92" />
       <ellipse cx="0" cy="1" rx="15" ry="17" fill="url(#skinGradient)" stroke="#fff0dd" strokeOpacity="0.45" strokeWidth="1.5" />
+      <ellipse cx="-6" cy="-2" rx="4.5" ry="6" fill="#fff0dd" opacity="0.16" />
       <path d="M-14 -5 C-10 -19 11 -19 16 -4 C6 -8 -2 -7 -14 -5Z" fill="#171a22" />
+      <path d="M-10 -8 C-4 -17 10 -15 15 -5 C7 -9 -2 -9 -10 -8Z" fill="#2b303b" opacity="0.65" />
       <circle cx="-5" cy="1" r="1.5" fill="#16181f" />
       <circle cx="5" cy="1" r="1.5" fill="#16181f" />
+      <path d="M0 2 L-2 7 L2 7" fill="none" stroke="#7a4630" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" opacity="0.75" />
       <path d="M-4 9 C0 12 5 11 8 8" fill="none" stroke="#6d3f2e" strokeLinecap="round" strokeWidth="1.5" />
       <path d="M-14 2 C-19 4 -18 12 -12 13" fill="url(#skinGradient)" opacity="0.9" />
+      <motion.path
+        d="M12 5 C17 10 15 16 10 18 C12 13 11 10 12 5Z"
+        fill="#39d7ff"
+        opacity="0.45"
+        animate={{ y: [0, 4, 0], opacity: [0.08, 0.5, 0.08] }}
+        transition={{ duration: 1.35, repeat: Infinity, ease: "easeInOut" }}
+      />
     </motion.g>
   );
 }
 
 function AvatarTorso({ x = 180, y = 86, rotate = 0 }: { x?: MotionNumber; y?: MotionNumber; rotate?: MotionNumber }) {
   return (
-    <motion.g animate={{ x, y, rotate }} transition={loop} style={{ transformOrigin: "0px 36px" }}>
-      <path
-        d="M-28 4 C-22 -10 22 -10 28 4 L35 57 C22 72 -22 72 -35 57Z"
-        fill="url(#shirtGradient)"
-        stroke="#bfffe0"
-        strokeOpacity="0.32"
-        strokeWidth="2"
-      />
-      <path d="M-22 13 C-8 22 8 22 22 13" fill="none" stroke="#ffffff" strokeOpacity="0.18" strokeWidth="2" />
-      <path d="M0 12 L0 58" stroke="#05070b" strokeOpacity="0.18" strokeWidth="2" />
-      <path d="M-29 55 C-15 67 15 67 29 55 L34 73 C14 84 -14 84 -34 73Z" fill="url(#shortsGradient)" />
-      <path d="M-17 76 H17" stroke="#ffffff" strokeOpacity="0.12" strokeLinecap="round" strokeWidth="2" />
+    <motion.g animate={{ x, y, rotate }} transition={loop} style={{ transformOrigin: "0px 36px" }} filter="url(#heavyShadow)">
+      <motion.g
+        animate={{ scaleX: [1, 1.025, 1], scaleY: [1, 0.985, 1] }}
+        transition={{ duration: 2.1, repeat: Infinity, ease: "easeInOut" }}
+        style={{ transformOrigin: "0px 35px" }}
+      >
+        <path
+          d="M-28 4 C-22 -10 22 -10 28 4 L35 57 C22 72 -22 72 -35 57Z"
+          fill="url(#shirtGradient)"
+          stroke="#bfffe0"
+          strokeOpacity="0.34"
+          strokeWidth="2"
+        />
+        <path d="M-22 13 C-8 22 8 22 22 13" fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="2" />
+        <path d="M-24 27 C-11 36 11 36 24 27" fill="none" stroke="#ffffff" strokeOpacity="0.12" strokeWidth="1.8" />
+        <path d="M-13 38 H13 M-10 49 H10" stroke="#05070b" strokeOpacity="0.2" strokeLinecap="round" strokeWidth="1.6" />
+        <path d="M0 12 L0 58" stroke="#05070b" strokeOpacity="0.2" strokeWidth="2" />
+        <ellipse cx="-18" cy="20" rx="7" ry="17" fill="#ffffff" opacity="0.08" />
+        <ellipse cx="18" cy="20" rx="7" ry="17" fill="#020617" opacity="0.16" />
+        <path d="M-29 55 C-15 67 15 67 29 55 L34 73 C14 84 -14 84 -34 73Z" fill="url(#shortsGradient)" />
+        <path d="M-17 76 H17" stroke="#ffffff" strokeOpacity="0.12" strokeLinecap="round" strokeWidth="2" />
+      </motion.g>
     </motion.g>
   );
 }
 
 function AvatarGlove({ point, size = 8 }: { point: PointFrames; size?: number }) {
   return (
-    <motion.g animate={{ x: point.x, y: point.y }} transition={loop}>
+    <motion.g animate={{ x: point.x, y: point.y, rotate: [-5, 5, -5] }} transition={loop} filter="url(#heavyShadow)">
       <ellipse cx="0" cy="0" rx={size + 3} ry={size} fill="#05070b" fillOpacity="0.3" />
       <ellipse cx="0" cy="-1" rx={size} ry={size + 2} fill="url(#gloveGradient)" stroke="#fff0dd" strokeOpacity="0.28" />
+      <circle cx="-3" cy="-5" r={Math.max(2, size * 0.24)} fill="#fff0dd" opacity="0.28" />
     </motion.g>
   );
 }
 
 function AvatarShoe({ x, y, flip = false }: { x: MotionNumber; y: MotionNumber; flip?: boolean }) {
   return (
-    <motion.g animate={{ x, y, scaleX: flip ? -1 : 1 }} transition={loop}>
+    <motion.g animate={{ x, y, scaleX: flip ? -1 : 1 }} transition={loop} filter="url(#heavyShadow)">
       <path d="M-5 -7 C7 -6 20 -1 25 6 C15 11 -11 10 -22 6 C-20 -2 -14 -7 -5 -7Z" fill="url(#shoeGradient)" />
       <path d="M-20 6 H23" stroke="#05070b" strokeOpacity="0.32" strokeWidth="2" strokeLinecap="round" />
+      <path d="M-7 -3 C2 -2 10 0 17 4" stroke="#ffffff" strokeOpacity="0.42" strokeLinecap="round" strokeWidth="1.6" />
     </motion.g>
   );
 }
@@ -1302,6 +1536,8 @@ function RealisticArm({ shoulder, arm }: { shoulder: { x: number; y: number }; a
     <g>
       <AnatomyLine x1={shoulder.x} y1={shoulder.y} x2={arm.elbow.x} y2={arm.elbow.y} width={14} />
       <AnatomyLine x1={arm.elbow.x} y1={arm.elbow.y} x2={arm.hand.x} y2={arm.hand.y} width={12} />
+      <Joint x={shoulder.x} y={shoulder.y} />
+      <Joint x={arm.elbow.x} y={arm.elbow.y} />
       <AvatarGlove point={arm.hand} />
     </g>
   );
