@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
-import { Activity, Box, Dumbbell, Play } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "../i18n";
 
 export type ExerciseAnimationMedia =
@@ -15,6 +14,10 @@ type ExerciseAnimationProps = {
   muscleGroup: string;
   animationType: string;
   media?: ExerciseAnimationMedia;
+  equipment?: string;
+  instructions?: string[];
+  recommendedSets?: number;
+  recommendedReps?: string;
 };
 
 type PointFrames = {
@@ -128,6 +131,11 @@ const presetMap: Record<string, ExercisePreset> = {
   "romanian-deadlift": {
     template: "legs",
     cue: "Hinge from the hips",
+    mode: "rdl"
+  },
+  "deadlift": {
+    template: "legs",
+    cue: "Brace, push, lock out",
     mode: "rdl"
   },
   "calf-raises": {
@@ -386,6 +394,11 @@ const presetMap: Record<string, ExercisePreset> = {
     cue: "Quick cadence",
     mode: "treadmill"
   },
+  "running-time": {
+    template: "cardio",
+    cue: "Steady pace, faster finish",
+    mode: "treadmill"
+  },
   "rowing-machine": {
     template: "pull",
     cue: "Legs, hips, arms",
@@ -490,124 +503,227 @@ function SceneShell({
   exerciseName,
   muscleGroup,
   cue,
+  equipment,
+  instructions = [],
+  recommendedSets,
+  recommendedReps,
   children
 }: {
   exerciseName: string;
   muscleGroup: string;
   cue: string;
+  equipment?: string;
+  instructions?: string[];
+  recommendedSets?: number;
+  recommendedReps?: string;
   children: React.ReactNode;
 }) {
   const { t } = useI18n();
+  const muscles = getTargetMuscles(exerciseName, muscleGroup);
+  const steps = instructions.length > 0 ? instructions.slice(0, 4) : getDefaultSteps(exerciseName, muscleGroup).slice(0, 4);
 
   return (
-    <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(64,255,154,0.2),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(57,215,255,0.14),transparent_34%),linear-gradient(145deg,#101722,#070a0f)]">
-      <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-full border border-white/10 bg-ink-950/75 px-3 py-1 text-xs font-bold text-slate-200">
-        <Activity className="h-3.5 w-3.5 text-rival-green" />
-        {t("Original motion")}
-      </div>
-      <div className="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-full border border-rival-cyan/20 bg-rival-cyan/10 px-3 py-1 text-xs font-bold text-rival-cyan">
-        <Play className="h-3.5 w-3.5 fill-current" />
-        {t("Loop")}
-      </div>
-      <svg viewBox="0 0 360 260" className="absolute inset-0 h-full w-full" role="img" aria-label={`${exerciseName} animation`}>
-        <defs>
-          <linearGradient id="bodyGradient" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0%" stopColor="#40ff9a" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="#39d7ff" stopOpacity="0.92" />
-          </linearGradient>
-          <linearGradient id="skinGradient" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0%" stopColor="#ffd8bd" />
-            <stop offset="45%" stopColor="#d89464" />
-            <stop offset="100%" stopColor="#8f5539" />
-          </linearGradient>
-          <linearGradient id="shirtGradient" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0%" stopColor="#4cf5a0" />
-            <stop offset="55%" stopColor="#1e9c76" />
-            <stop offset="100%" stopColor="#13506a" />
-          </linearGradient>
-          <linearGradient id="shortsGradient" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0%" stopColor="#1b2b45" />
-            <stop offset="100%" stopColor="#070a12" />
-          </linearGradient>
-          <linearGradient id="shoeGradient" x1="0" x2="1">
-            <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="100%" stopColor="#9fb2c7" />
-          </linearGradient>
-          <linearGradient id="gloveGradient" x1="0" x2="1">
-            <stop offset="0%" stopColor="#ff7a95" />
-            <stop offset="100%" stopColor="#ffc857" />
-          </linearGradient>
-          <linearGradient id="metalGradient" x1="0" x2="1">
-            <stop offset="0%" stopColor="#f8fbff" />
-            <stop offset="45%" stopColor="#9fb1c7" />
-            <stop offset="100%" stopColor="#eef6ff" />
-          </linearGradient>
-          <radialGradient id="muscleHighlight" cx="35%" cy="25%" r="75%">
-            <stop offset="0%" stopColor="#fff0dd" stopOpacity="0.78" />
-            <stop offset="60%" stopColor="#d89464" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#6a3728" stopOpacity="0.2" />
-          </radialGradient>
-          <linearGradient id="fiberGradient" x1="0" x2="1">
-            <stop offset="0%" stopColor="#fff0dd" stopOpacity="0.08" />
-            <stop offset="48%" stopColor="#fff0dd" stopOpacity="0.72" />
-            <stop offset="100%" stopColor="#fff0dd" stopOpacity="0.08" />
-          </linearGradient>
-          <linearGradient id="plateGradient" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0%" stopColor="#334155" />
-            <stop offset="45%" stopColor="#111827" />
-            <stop offset="100%" stopColor="#020617" />
-          </linearGradient>
-          <radialGradient id="jointGlow" cx="35%" cy="25%" r="70%">
-            <stop offset="0%" stopColor="#fff0dd" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="#d89464" stopOpacity="0.12" />
-          </radialGradient>
-          <linearGradient id="gearGradient" x1="0" x2="1">
-            <stop offset="0%" stopColor="#ffc857" />
-            <stop offset="100%" stopColor="#ff4f7b" />
-          </linearGradient>
-          <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          <filter id="heavyShadow" x="-40%" y="-40%" width="180%" height="180%">
-            <feDropShadow dx="0" dy="8" stdDeviation="5" floodColor="#02040a" floodOpacity="0.55" />
-          </filter>
-        </defs>
-        <Atmosphere muscleGroup={muscleGroup} />
-        <Grid />
-        {children}
-        <TargetMusclePulse muscleGroup={muscleGroup} />
-        <RepMeter />
-      </svg>
-      <div className="absolute bottom-4 left-4 z-10 max-w-[72%]">
-        <div className="text-sm font-bold text-white">{exerciseName}</div>
-        <div className="mt-1 flex flex-wrap gap-2 text-xs font-semibold">
-          <span className="rounded-full border border-white/10 bg-white/[0.055] px-2 py-1 text-slate-300">{t(muscleGroup)}</span>
-          <span className="rounded-full border border-rival-green/20 bg-rival-green/10 px-2 py-1 text-rival-green">{cue}</span>
+    <div className="relative overflow-hidden rounded-lg border border-slate-300/60 bg-[#f8fafc] text-slate-950 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.7)]">
+      <div className="grid min-h-[360px] gap-0 lg:grid-cols-[minmax(0,1.45fr)_minmax(230px,0.7fr)]">
+        <div className="relative min-h-[300px] overflow-hidden bg-[radial-gradient(circle_at_28%_18%,rgba(255,255,255,0.96),transparent_38%),linear-gradient(145deg,#ffffff,#edf2f7)]">
+          <div className="absolute left-4 top-4 z-10 max-w-[74%]">
+            <div className="text-3xl font-black uppercase italic tracking-normal text-slate-950 sm:text-4xl">{exerciseName}</div>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs font-black uppercase">
+              <span className="rounded bg-slate-950 px-2.5 py-1 text-white">{equipment || t(muscleGroup)}</span>
+              <span className="rounded border border-slate-300 bg-white px-2.5 py-1 text-slate-700">{cue}</span>
+            </div>
+          </div>
+          <svg viewBox="0 0 360 260" className="absolute inset-x-0 bottom-0 h-full w-full" role="img" aria-label={`${exerciseName} illustrated guide`}>
+            <defs>
+              <linearGradient id="bodyGradient" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#40ff9a" stopOpacity="0.95" />
+                <stop offset="100%" stopColor="#39d7ff" stopOpacity="0.92" />
+              </linearGradient>
+              <linearGradient id="skinGradient" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#ffd8bd" />
+                <stop offset="45%" stopColor="#d89464" />
+                <stop offset="100%" stopColor="#8f5539" />
+              </linearGradient>
+              <linearGradient id="shirtGradient" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#ffe4c7" />
+                <stop offset="48%" stopColor="#d89464" />
+                <stop offset="100%" stopColor="#8f5539" />
+              </linearGradient>
+              <linearGradient id="shortsGradient" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#20242b" />
+                <stop offset="45%" stopColor="#0d1117" />
+                <stop offset="100%" stopColor="#030507" />
+              </linearGradient>
+              <linearGradient id="shoeGradient" x1="0" x2="1">
+                <stop offset="0%" stopColor="#232831" />
+                <stop offset="58%" stopColor="#080a0f" />
+                <stop offset="100%" stopColor="#d8dde5" />
+              </linearGradient>
+              <linearGradient id="gloveGradient" x1="0" x2="1">
+                <stop offset="0%" stopColor="#ffe0c2" />
+                <stop offset="55%" stopColor="#d89464" />
+                <stop offset="100%" stopColor="#8f5539" />
+              </linearGradient>
+              <linearGradient id="metalGradient" x1="0" x2="1">
+                <stop offset="0%" stopColor="#f8fbff" />
+                <stop offset="45%" stopColor="#9fb1c7" />
+                <stop offset="100%" stopColor="#eef6ff" />
+              </linearGradient>
+              <radialGradient id="muscleHighlight" cx="35%" cy="25%" r="75%">
+                <stop offset="0%" stopColor="#fff0dd" stopOpacity="0.78" />
+                <stop offset="60%" stopColor="#d89464" stopOpacity="0.2" />
+                <stop offset="100%" stopColor="#6a3728" stopOpacity="0.2" />
+              </radialGradient>
+              <linearGradient id="fiberGradient" x1="0" x2="1">
+                <stop offset="0%" stopColor="#fff0dd" stopOpacity="0.08" />
+                <stop offset="48%" stopColor="#fff0dd" stopOpacity="0.72" />
+                <stop offset="100%" stopColor="#fff0dd" stopOpacity="0.08" />
+              </linearGradient>
+              <linearGradient id="plateGradient" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0%" stopColor="#334155" />
+                <stop offset="45%" stopColor="#111827" />
+                <stop offset="100%" stopColor="#020617" />
+              </linearGradient>
+              <radialGradient id="jointGlow" cx="35%" cy="25%" r="70%">
+                <stop offset="0%" stopColor="#fff0dd" stopOpacity="0.85" />
+                <stop offset="100%" stopColor="#d89464" stopOpacity="0.12" />
+              </radialGradient>
+              <linearGradient id="gearGradient" x1="0" x2="1">
+                <stop offset="0%" stopColor="#ffc857" />
+                <stop offset="100%" stopColor="#ff4f7b" />
+              </linearGradient>
+              <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="heavyShadow" x="-40%" y="-40%" width="180%" height="180%">
+                <feDropShadow dx="0" dy="8" stdDeviation="5" floodColor="#02040a" floodOpacity="0.35" />
+              </filter>
+            </defs>
+            <GuideGrid />
+            <MuscleBackplate muscleGroup={muscleGroup} />
+            {children}
+            <FrameBadge index={1} label="Start" x={22} y={132} />
+            <FrameBadge index={2} label="Work" x={238} y={70} />
+            <RepArrow />
+          </svg>
         </div>
+
+        <aside className="border-t border-slate-200 bg-white/92 p-4 lg:border-l lg:border-t-0">
+          <div className="rounded-lg border border-slate-200 bg-slate-950 px-3 py-2 text-center text-sm font-black uppercase text-white">
+            Muscles Worked
+          </div>
+          <div className="mt-3 space-y-2">
+            {muscles.map((muscle) => (
+              <div key={muscle.name} className="flex items-center gap-2 text-sm font-bold">
+                <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: muscle.color }} />
+                <span className="text-slate-900">{muscle.name}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="text-xs font-black uppercase text-slate-500">How to perform</div>
+            <ol className="mt-2 space-y-1.5 text-xs font-semibold leading-5 text-slate-700">
+              {steps.map((step, index) => (
+                <li key={`${step}-${index}`} className="flex gap-2">
+                  <span className="text-slate-950">{index + 1}.</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          {recommendedSets || recommendedReps ? (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {recommendedSets ? (
+                <div className="rounded-lg border border-slate-200 bg-white p-2 text-center">
+                  <div className="text-[10px] font-black uppercase text-slate-500">Sets</div>
+                  <div className="text-lg font-black text-slate-950">{recommendedSets}</div>
+                </div>
+              ) : null}
+              {recommendedReps ? (
+                <div className="rounded-lg border border-slate-200 bg-white p-2 text-center">
+                  <div className="text-[10px] font-black uppercase text-slate-500">Reps</div>
+                  <div className="text-sm font-black text-slate-950">{recommendedReps}</div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </aside>
       </div>
     </div>
   );
 }
 
-function Grid() {
+function GuideGrid() {
   return (
     <g opacity="0.9">
-      <path d="M32 206 C92 190 264 190 328 206" fill="none" stroke="#39d7ff" strokeOpacity="0.26" strokeWidth="2" />
-      <path d="M54 213 L306 213" stroke="#ffffff" strokeOpacity="0.08" strokeWidth="1" />
-      <path d="M78 219 L282 219" stroke="#ffffff" strokeOpacity="0.07" strokeWidth="1" />
+      <path d="M28 212 C90 194 265 194 332 212" fill="none" stroke="#0f172a" strokeOpacity="0.18" strokeWidth="2" />
+      <path d="M54 220 L306 220" stroke="#0f172a" strokeOpacity="0.08" strokeWidth="1" />
+      <path d="M78 227 L282 227" stroke="#0f172a" strokeOpacity="0.06" strokeWidth="1" />
       {Array.from({ length: 8 }).map((_, index) => (
         <path
           key={index}
           d={`M${58 + index * 35} 210 L${70 + index * 30} 228`}
-          stroke="#ffffff"
-          strokeOpacity="0.055"
+          stroke="#0f172a"
+          strokeOpacity="0.04"
           strokeWidth="1"
         />
       ))}
+    </g>
+  );
+}
+
+function MuscleBackplate({ muscleGroup }: { muscleGroup: string }) {
+  const color = getMuscleColor(muscleGroup);
+  const areas = getMuscleAreas(muscleGroup);
+
+  return (
+    <g pointerEvents="none">
+      {areas.map((area, index) => (
+        <motion.ellipse
+          key={`${area.cx}-${area.cy}-${index}`}
+          cx={area.cx}
+          cy={area.cy}
+          rx={area.rx * 0.72}
+          ry={area.ry * 0.72}
+          fill={color}
+          opacity="0.12"
+          filter="url(#softGlow)"
+          animate={{ opacity: [0.08, 0.2, 0.08], scale: [0.94, 1.05, 0.94] }}
+          transition={{ duration: 1.65, repeat: Infinity, ease: "easeInOut", delay: index * 0.08 }}
+          style={{ transformOrigin: `${area.cx}px ${area.cy}px` }}
+        />
+      ))}
+    </g>
+  );
+}
+
+function FrameBadge({ index, label, x, y }: { index: number; label: string; x: number; y: number }) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <rect x="0" y="0" width="74" height="26" rx="6" fill="#0f172a" />
+      <circle cx="13" cy="13" r="9" fill="#ffffff" />
+      <text x="13" y="17" textAnchor="middle" fontSize="12" fontWeight="900" fill="#0f172a">
+        {index}
+      </text>
+      <text x="30" y="17" fontSize="10" fontWeight="900" fill="#ffffff">
+        {label}
+      </text>
+    </g>
+  );
+}
+
+function RepArrow() {
+  return (
+    <g transform="translate(138 232)">
+      <path d="M0 0 H84" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
+      <path d="M73 -5 L84 0 L73 5" fill="none" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <text x="42" y="-7" textAnchor="middle" fontSize="10" fontWeight="900" fill="#0f172a">
+        REPEAT
+      </text>
     </g>
   );
 }
@@ -684,6 +800,95 @@ function getMuscleColor(muscleGroup: string) {
   };
 
   return colors[muscleGroup] ?? "#40ff9a";
+}
+
+function getTargetMuscles(exerciseName: string, muscleGroup: string) {
+  const fallback = {
+    Legs: [
+      { name: "Quadriceps", color: "#ef4444" },
+      { name: "Glutes", color: "#f97316" },
+      { name: "Hamstrings", color: "#22c55e" }
+    ],
+    Chest: [
+      { name: "Chest", color: "#ef4444" },
+      { name: "Anterior Shoulders", color: "#f97316" },
+      { name: "Triceps", color: "#22c55e" }
+    ],
+    Back: [
+      { name: "Lats", color: "#ef4444" },
+      { name: "Upper Back", color: "#f97316" },
+      { name: "Biceps", color: "#22c55e" }
+    ],
+    Shoulders: [
+      { name: "Deltoids", color: "#ef4444" },
+      { name: "Traps", color: "#f97316" },
+      { name: "Triceps", color: "#22c55e" }
+    ],
+    Biceps: [
+      { name: "Biceps", color: "#ef4444" },
+      { name: "Brachialis", color: "#f97316" },
+      { name: "Forearms", color: "#22c55e" }
+    ],
+    Triceps: [
+      { name: "Triceps", color: "#ef4444" },
+      { name: "Shoulders", color: "#f97316" },
+      { name: "Forearms", color: "#22c55e" }
+    ],
+    Abs: [
+      { name: "Abdominals", color: "#ef4444" },
+      { name: "Obliques", color: "#f97316" },
+      { name: "Hip Flexors", color: "#22c55e" }
+    ],
+    Cardio: [
+      { name: "Heart / Lungs", color: "#ef4444" },
+      { name: "Legs", color: "#f97316" },
+      { name: "Core", color: "#22c55e" }
+    ],
+    "Full Body": [
+      { name: "Full Body", color: "#ef4444" },
+      { name: "Core", color: "#f97316" },
+      { name: "Shoulders", color: "#22c55e" }
+    ]
+  } satisfies Record<string, Array<{ name: string; color: string }>>;
+
+  const key = slugify(exerciseName);
+  const specific: Record<string, Array<{ name: string; color: string }>> = {
+    "bench-press": fallback.Chest,
+    "incline-dumbbell-press": fallback.Chest,
+    "push-ups": fallback.Chest,
+    "pull-ups": fallback.Back,
+    "lat-pulldown": fallback.Back,
+    "barbell-row": fallback.Back,
+    "seated-cable-row": fallback.Back,
+    "deadlift": [
+      { name: "Hamstrings", color: "#ef4444" },
+      { name: "Glutes", color: "#f97316" },
+      { name: "Back", color: "#22c55e" }
+    ],
+    "romanian-deadlift": [
+      { name: "Hamstrings", color: "#ef4444" },
+      { name: "Glutes", color: "#f97316" },
+      { name: "Lower Back", color: "#22c55e" }
+    ],
+    "treadmill-intervals": fallback.Cardio,
+    "running-time": fallback.Cardio,
+    "rowing-machine": [
+      { name: "Back", color: "#ef4444" },
+      { name: "Legs", color: "#f97316" },
+      { name: "Cardio", color: "#22c55e" }
+    ]
+  };
+
+  return specific[key] ?? fallback[muscleGroup as keyof typeof fallback] ?? fallback["Full Body"];
+}
+
+function getDefaultSteps(exerciseName: string, muscleGroup: string) {
+  return [
+    `Set up for ${exerciseName.toLowerCase()} with a stable stance and controlled posture.`,
+    `Brace your core and move through the full range without rushing.`,
+    `Focus tension on the ${muscleGroup.toLowerCase()} muscles shown in the guide.`,
+    "Return under control and repeat for clean reps."
+  ];
 }
 
 function getMuscleAreas(muscleGroup: string) {
@@ -1468,8 +1673,16 @@ function AvatarHead({ x, y, rotate = [0, 0, 0], scale = 1 }: { x: MotionNumber; 
       <ellipse cx="0" cy="20" rx="8" ry="7" fill="#9f6544" opacity="0.92" />
       <ellipse cx="0" cy="1" rx="15" ry="17" fill="url(#skinGradient)" stroke="#fff0dd" strokeOpacity="0.45" strokeWidth="1.5" />
       <ellipse cx="-6" cy="-2" rx="4.5" ry="6" fill="#fff0dd" opacity="0.16" />
-      <path d="M-14 -5 C-10 -19 11 -19 16 -4 C6 -8 -2 -7 -14 -5Z" fill="#171a22" />
-      <path d="M-10 -8 C-4 -17 10 -15 15 -5 C7 -9 -2 -9 -10 -8Z" fill="#2b303b" opacity="0.65" />
+      <path
+        d="M-17 -4 C-21 -13 -13 -18 -8 -15 C-8 -23 0 -21 2 -16 C6 -24 14 -19 13 -12 C20 -15 21 -5 15 -2 C7 -8 -3 -8 -17 -4Z"
+        fill="#080a0f"
+      />
+      <path
+        d="M-13 -8 C-8 -19 -3 -12 0 -18 C3 -10 9 -19 13 -7 C7 -11 -2 -10 -13 -8Z"
+        fill="#262b33"
+        opacity="0.7"
+      />
+      <path d="M-13 0 C-9 -3 -6 -3 -3 -1 M4 -1 C8 -3 11 -2 14 1" stroke="#111318" strokeLinecap="round" strokeWidth="1.3" opacity="0.75" />
       <circle cx="-5" cy="1" r="1.5" fill="#16181f" />
       <circle cx="5" cy="1" r="1.5" fill="#16181f" />
       <path d="M0 2 L-2 7 L2 7" fill="none" stroke="#7a4630" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.2" opacity="0.75" />
@@ -1495,20 +1708,23 @@ function AvatarTorso({ x = 180, y = 86, rotate = 0 }: { x?: MotionNumber; y?: Mo
         style={{ transformOrigin: "0px 35px" }}
       >
         <path
-          d="M-28 4 C-22 -10 22 -10 28 4 L35 57 C22 72 -22 72 -35 57Z"
+          d="M-32 5 C-24 -11 24 -11 32 5 L29 56 C17 70 -17 70 -29 56Z"
           fill="url(#shirtGradient)"
-          stroke="#bfffe0"
-          strokeOpacity="0.34"
+          stroke="#fff0dd"
+          strokeOpacity="0.38"
           strokeWidth="2"
         />
-        <path d="M-22 13 C-8 22 8 22 22 13" fill="none" stroke="#ffffff" strokeOpacity="0.2" strokeWidth="2" />
-        <path d="M-24 27 C-11 36 11 36 24 27" fill="none" stroke="#ffffff" strokeOpacity="0.12" strokeWidth="1.8" />
-        <path d="M-13 38 H13 M-10 49 H10" stroke="#05070b" strokeOpacity="0.2" strokeLinecap="round" strokeWidth="1.6" />
-        <path d="M0 12 L0 58" stroke="#05070b" strokeOpacity="0.2" strokeWidth="2" />
-        <ellipse cx="-18" cy="20" rx="7" ry="17" fill="#ffffff" opacity="0.08" />
-        <ellipse cx="18" cy="20" rx="7" ry="17" fill="#020617" opacity="0.16" />
-        <path d="M-29 55 C-15 67 15 67 29 55 L34 73 C14 84 -14 84 -34 73Z" fill="url(#shortsGradient)" />
-        <path d="M-17 76 H17" stroke="#ffffff" strokeOpacity="0.12" strokeLinecap="round" strokeWidth="2" />
+        <path d="M-25 13 C-10 23 10 23 25 13" fill="none" stroke="#7a4630" strokeOpacity="0.42" strokeWidth="1.8" />
+        <path d="M-20 19 C-12 14 -5 14 0 22 C5 14 12 14 20 19" fill="none" stroke="#6d3f2e" strokeOpacity="0.34" strokeWidth="1.5" />
+        <path d="M-18 31 C-10 26 -4 27 0 34 C4 27 10 26 18 31" fill="none" stroke="#6d3f2e" strokeOpacity="0.32" strokeWidth="1.5" />
+        <path d="M-15 43 C-8 39 -3 40 0 46 C3 40 8 39 15 43" fill="none" stroke="#6d3f2e" strokeOpacity="0.3" strokeWidth="1.5" />
+        <path d="M0 13 L0 58" stroke="#6d3f2e" strokeOpacity="0.38" strokeWidth="1.6" />
+        <path d="M-31 6 C-39 10 -42 19 -39 29 M31 6 C39 10 42 19 39 29" fill="none" stroke="#fff0dd" strokeOpacity="0.18" strokeLinecap="round" strokeWidth="4" />
+        <ellipse cx="-18" cy="21" rx="7" ry="17" fill="#ffffff" opacity="0.1" />
+        <ellipse cx="18" cy="21" rx="7" ry="17" fill="#020617" opacity="0.12" />
+        <path d="M-30 55 C-16 66 16 66 30 55 L36 77 C16 89 -16 89 -36 77Z" fill="url(#shortsGradient)" />
+        <path d="M-21 62 C-8 67 8 67 21 62" stroke="#ffffff" strokeOpacity="0.1" strokeLinecap="round" strokeWidth="2" />
+        <path d="M0 59 L0 80" stroke="#030507" strokeOpacity="0.55" strokeWidth="1.8" />
       </motion.g>
     </motion.g>
   );
@@ -1948,22 +2164,103 @@ function RealisticScene({ preset }: { preset: ExercisePreset }) {
   return <RealisticCardioScene preset={preset} />;
 }
 
-export function ExerciseAnimation({ exerciseName, muscleGroup, animationType, media }: ExerciseAnimationProps) {
+function GuideImagePending({
+  exerciseName,
+  muscleGroup,
+  equipment,
+  instructions = [],
+  recommendedSets,
+  recommendedReps
+}: {
+  exerciseName: string;
+  muscleGroup: string;
+  equipment?: string;
+  instructions?: string[];
+  recommendedSets?: number;
+  recommendedReps?: string;
+}) {
+  const muscles = getTargetMuscles(exerciseName, muscleGroup);
+  const steps = instructions.length > 0 ? instructions.slice(0, 3) : getDefaultSteps(exerciseName, muscleGroup).slice(0, 3);
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-slate-300/70 bg-[#f8fafc] text-slate-950">
+      <div className="grid min-h-[340px] lg:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="flex min-h-[280px] flex-col justify-between bg-[linear-gradient(145deg,#ffffff,#eef2f7)] p-5">
+          <div>
+            <div className="text-3xl font-black uppercase italic tracking-normal">{exerciseName}</div>
+            <div className="mt-2 inline-flex rounded bg-slate-950 px-3 py-1 text-xs font-black uppercase text-white">
+              {equipment ?? muscleGroup}
+            </div>
+          </div>
+          <div className="rounded-lg border border-dashed border-slate-300 bg-white/70 p-5 text-center">
+            <div className="text-sm font-black uppercase text-slate-800">Illustrated guide image needed</div>
+            <div className="mx-auto mt-2 max-w-sm text-xs font-semibold leading-5 text-slate-500">
+              Add a generated image at the matching exercise-media path to replace this placeholder.
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {recommendedSets ? (
+              <div className="rounded-lg border border-slate-200 bg-white p-2 text-center">
+                <div className="text-[10px] font-black uppercase text-slate-500">Sets</div>
+                <div className="text-lg font-black">{recommendedSets}</div>
+              </div>
+            ) : null}
+            {recommendedReps ? (
+              <div className="rounded-lg border border-slate-200 bg-white p-2 text-center">
+                <div className="text-[10px] font-black uppercase text-slate-500">Reps</div>
+                <div className="text-sm font-black">{recommendedReps}</div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <aside className="border-t border-slate-200 bg-white p-4 lg:border-l lg:border-t-0">
+          <div className="rounded-lg bg-slate-950 px-3 py-2 text-center text-sm font-black uppercase text-white">Muscles Worked</div>
+          <div className="mt-3 space-y-2">
+            {muscles.map((muscle) => (
+              <div key={muscle.name} className="flex items-center gap-2 text-sm font-bold">
+                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: muscle.color }} />
+                <span>{muscle.name}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 text-xs font-black uppercase text-slate-500">How to perform</div>
+          <ol className="mt-2 space-y-2 text-xs font-semibold leading-5 text-slate-700">
+            {steps.map((step, index) => (
+              <li key={`${step}-${index}`} className="flex gap-2">
+                <span className="font-black text-slate-950">{index + 1}.</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+export function ExerciseAnimation({
+  exerciseName,
+  muscleGroup,
+  animationType,
+  media,
+  equipment,
+  instructions,
+  recommendedSets,
+  recommendedReps
+}: ExerciseAnimationProps) {
   const [mediaFailed, setMediaFailed] = useState(false);
 
   useEffect(() => {
     setMediaFailed(false);
   }, [media?.src]);
 
-  const preset = useMemo(() => getPreset(exerciseName, animationType), [exerciseName, animationType]);
-
   if (!mediaFailed && (media?.type === "image" || media?.type === "gif")) {
     return (
-      <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-white/10 bg-ink-950">
+      <div className="relative flex aspect-[3/2] items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white">
         <img
           src={media.src}
           alt={media.alt ?? exerciseName}
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain object-center"
           onError={() => setMediaFailed(true)}
         />
       </div>
@@ -1984,15 +2281,13 @@ export function ExerciseAnimation({ exerciseName, muscleGroup, animationType, me
   }
 
   return (
-    <SceneShell exerciseName={exerciseName} muscleGroup={muscleGroup} cue={preset.cue}>
-      <RealisticScene preset={preset} />
-      <motion.g animate={{ opacity: [0.38, 1, 0.38], scale: [0.96, 1.04, 0.96] }} transition={loop}>
-        <foreignObject x="300" y="202" width="42" height="42">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-rival-green/30 bg-rival-green/10 text-rival-green">
-            {preset.template === "legs" ? <Box className="h-4 w-4" /> : <Dumbbell className="h-4 w-4" />}
-          </div>
-        </foreignObject>
-      </motion.g>
-    </SceneShell>
+    <GuideImagePending
+      exerciseName={exerciseName}
+      muscleGroup={muscleGroup}
+      equipment={equipment}
+      instructions={instructions}
+      recommendedSets={recommendedSets}
+      recommendedReps={recommendedReps}
+    />
   );
 }

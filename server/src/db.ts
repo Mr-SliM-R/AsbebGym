@@ -12,12 +12,12 @@ export const DB_PATH = path.join(DATA_DIR, "gym-rival.sqlite");
 let db: DatabaseSync | undefined;
 
 const categories = [
-  "Legs",
   "Chest",
   "Back",
   "Shoulders",
   "Biceps",
   "Triceps",
+  "Legs",
   "Abs",
   "Cardio",
   "Full Body"
@@ -25,12 +25,11 @@ const categories = [
 
 const ranks = [
   { name: "Bronze", minPoints: 0, maxPoints: 499, color: "#f59e0b" },
-  { name: "Silver", minPoints: 500, maxPoints: 1199, color: "#cbd5e1" },
-  { name: "Gold", minPoints: 1200, maxPoints: 2199, color: "#facc15" },
-  { name: "Platinum", minPoints: 2200, maxPoints: 3499, color: "#67e8f9" },
-  { name: "Diamond", minPoints: 3500, maxPoints: 5299, color: "#38bdf8" },
-  { name: "Master", minPoints: 5300, maxPoints: 7499, color: "#fb7185" },
-  { name: "Legend", minPoints: 7500, maxPoints: 999999, color: "#a78bfa" }
+  { name: "Silver", minPoints: 500, maxPoints: 1499, color: "#cbd5e1" },
+  { name: "Gold", minPoints: 1500, maxPoints: 2999, color: "#facc15" },
+  { name: "Diamond", minPoints: 3000, maxPoints: 4999, color: "#38bdf8" },
+  { name: "Master", minPoints: 5000, maxPoints: 7999, color: "#fb7185" },
+  { name: "Titan", minPoints: 8000, maxPoints: 999999, color: "#a78bfa" }
 ];
 
 const users = [
@@ -58,14 +57,14 @@ const users = [
 ];
 
 const badges = [
-  ["First Workout", "Complete your first saved workout.", "Medal"],
-  ["Leg Beast", "Complete multiple leg sessions.", "Dumbbell"],
-  ["Chest Warrior", "Stack serious chest volume.", "Shield"],
-  ["Back Monster", "Own pull day consistency.", "Mountain"],
-  ["Abs Machine", "Finish repeated core sessions.", "CircleDot"],
-  ["5-Day Streak", "Train five days in a row.", "Flame"],
-  ["Personal Record King", "Log a personal record.", "Crown"],
-  ["Consistency Master", "Complete four workouts in one week.", "CalendarCheck"]
+  ["First Workout", "Complete your first workout check-in or saved workout.", "Medal"],
+  ["7-Day Streak", "Check in for seven training days in a row.", "Flame"],
+  ["30-Day Streak", "Check in for thirty training days in a row.", "CalendarCheck"],
+  ["Chest Warrior", "Complete three chest sessions.", "Shield"],
+  ["Leg Day Survivor", "Complete two leg sessions.", "Dumbbell"],
+  ["Cardio Machine", "Complete three cardio sessions.", "Activity"],
+  ["1000 Points", "Reach 1000 total points.", "Trophy"],
+  ["5000 Points", "Reach 5000 total points.", "Crown"]
 ];
 
 type ExerciseSeed = {
@@ -185,6 +184,9 @@ const exercises: ExerciseSeed[] = [
     recommendedSets: 4,
     recommendedReps: "5-8",
     animationType: "press",
+    animationMediaType: "image",
+    animationSrc: "/exercise-media/chest/bench-press-guide.png",
+    animationCredit: "Generated in-house with ChatGPT image tools",
     caloriesEstimate: 70
   },
   {
@@ -730,15 +732,53 @@ const exercises: ExerciseSeed[] = [
     recommendedReps: "10-15",
     animationType: "slam",
     caloriesEstimate: 95
+  },
+  {
+    name: "Deadlift",
+    muscleGroup: "Legs",
+    difficulty: "Advanced",
+    equipment: "Barbell",
+    instructions: [
+      "Stand with the bar over midfoot.",
+      "Hinge down and grip the bar just outside your legs.",
+      "Brace hard and push the floor away.",
+      "Lock out with hips through, then lower under control."
+    ],
+    commonMistakes: ["Rounding the lower back", "Yanking the bar off the floor", "Letting the bar drift forward"],
+    recommendedSets: 4,
+    recommendedReps: "3-6",
+    animationType: "hinge",
+    animationMediaType: "video",
+    animationSrc: "/exercise-media/legs/deadlift.mp4",
+    caloriesEstimate: 110
+  },
+  {
+    name: "Running Time",
+    muscleGroup: "Cardio",
+    difficulty: "Beginner",
+    equipment: "Track, treadmill, or road",
+    instructions: [
+      "Warm up for five minutes.",
+      "Run the selected distance at a controlled hard pace.",
+      "Keep shoulders relaxed and cadence steady.",
+      "Record your best time in minutes."
+    ],
+    commonMistakes: ["Starting too fast", "Skipping warm-up", "Holding the treadmill rails"],
+    recommendedSets: 1,
+    recommendedReps: "Best time",
+    animationType: "run",
+    animationMediaType: "video",
+    animationSrc: "/exercise-media/cardio/running-time.mp4",
+    caloriesEstimate: 220
   }
 ];
 
 const challenges = [
-  ["Complete 4 workouts this week", "Finish four saved workouts before the week ends.", 150, "workouts", 4, null],
-  ["Train legs twice this week", "Log at least two workouts containing a legs exercise.", 150, "legs", 2, "Legs"],
-  ["Complete 100 push-ups total", "Add Push-ups to workouts until you reach 100 reps.", 150, "pushups", 100, "Chest"],
-  ["Burn 1000 calories", "Estimated calories from completed exercises count toward this.", 150, "calories", 1000, null],
-  ["Complete abs workout 3 times", "Train abs in three separate saved workouts.", 150, "abs", 3, "Abs"]
+  ["Most workouts this week", "Whoever logs the most workouts this week leads the weekly fight.", 150, "weekly_workouts", 1, null],
+  ["Most points this week", "The weekly points king owns bragging rights.", 150, "weekly_points", 1, null],
+  ["Most chest sessions", "Chest volume decides this mini-rivalry.", 150, "weekly_chest", 1, "Chest"],
+  ["Most cardio sessions", "Cardio sessions count toward this weekly race.", 150, "weekly_cardio", 1, "Cardio"],
+  ["No skipped day challenge", "Check in every day this week so far.", 150, "weekly_no_skip", 1, null]
 ];
 
 export function getDatabase() {
@@ -779,6 +819,55 @@ export function initializeDatabase() {
       favorite_muscle_group TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS organizations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      plan TEXT NOT NULL DEFAULT 'trial',
+      subscription_status TEXT NOT NULL DEFAULT 'trialing',
+      trial_ends_at TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS user_accounts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      organization_id INTEGER NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      password_salt TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'member',
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS invites (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      organization_id INTEGER NOT NULL,
+      email TEXT NOT NULL,
+      code TEXT NOT NULL UNIQUE,
+      role TEXT NOT NULL DEFAULT 'member',
+      expires_at TEXT NOT NULL,
+      accepted_at TEXT,
+      emailed_at TEXT,
+      delivery_status TEXT NOT NULL DEFAULT 'not_sent',
+      delivery_error TEXT,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS beta_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      organization_id INTEGER,
+      user_id INTEGER,
+      event_name TEXT NOT NULL,
+      metadata TEXT,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+
     CREATE TABLE IF NOT EXISTS user_stats (
       user_id INTEGER PRIMARY KEY,
       total_points INTEGER NOT NULL DEFAULT 0,
@@ -816,6 +905,17 @@ export function initializeDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS daily_checkins (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      checkin_date TEXT NOT NULL,
+      points INTEGER NOT NULL DEFAULT 75,
+      source TEXT NOT NULL DEFAULT 'daily_button',
+      created_at TEXT NOT NULL,
+      UNIQUE (user_id, checkin_date),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS workout_exercises (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       workout_id INTEGER NOT NULL,
@@ -825,6 +925,26 @@ export function initializeDatabase() {
       completed_sets INTEGER NOT NULL,
       personal_record INTEGER NOT NULL DEFAULT 0,
       FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE,
+      FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS workout_templates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS workout_template_exercises (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      template_id INTEGER NOT NULL,
+      exercise_id INTEGER NOT NULL,
+      position INTEGER NOT NULL,
+      sets TEXT NOT NULL,
+      notes TEXT,
+      FOREIGN KEY (template_id) REFERENCES workout_templates(id) ON DELETE CASCADE,
       FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
     );
 
@@ -874,14 +994,45 @@ export function initializeDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE
     );
+
+    CREATE INDEX IF NOT EXISTS idx_workouts_user_date ON workouts(user_id, workout_date);
+    CREATE INDEX IF NOT EXISTS idx_daily_checkins_user_date ON daily_checkins(user_id, checkin_date);
+    CREATE INDEX IF NOT EXISTS idx_user_accounts_org ON user_accounts(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_invites_org ON invites(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_beta_events_org_date ON beta_events(organization_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_workout_templates_user ON workout_templates(user_id, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_workout_template_exercises_template ON workout_template_exercises(template_id, position);
   `);
 
   ensureExerciseMediaColumns(database);
+  ensureSellableColumns(database);
+  cleanupDuplicateCatalogRows(database);
+}
+
+function getColumnNames(database: DatabaseSync, tableName: string) {
+  const columns = database.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{ name: string }>;
+  return new Set(columns.map((column) => column.name));
+}
+
+function ensureColumn(database: DatabaseSync, tableName: string, columnName: string, definition: string) {
+  const columnNames = getColumnNames(database, tableName);
+
+  if (!columnNames.has(columnName)) {
+    database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition};`);
+  }
+}
+
+function ensureSellableColumns(database: DatabaseSync) {
+  ensureColumn(database, "organizations", "stripe_customer_id", "TEXT");
+  ensureColumn(database, "organizations", "stripe_subscription_id", "TEXT");
+  ensureColumn(database, "organizations", "checkout_session_id", "TEXT");
+  ensureColumn(database, "invites", "emailed_at", "TEXT");
+  ensureColumn(database, "invites", "delivery_status", "TEXT NOT NULL DEFAULT 'not_sent'");
+  ensureColumn(database, "invites", "delivery_error", "TEXT");
 }
 
 function ensureExerciseMediaColumns(database: DatabaseSync) {
-  const columns = database.prepare("PRAGMA table_info(exercises)").all() as Array<{ name: string }>;
-  const columnNames = new Set(columns.map((column) => column.name));
+  const columnNames = getColumnNames(database, "exercises");
 
   if (!columnNames.has("animation_asset_key")) {
     database.exec("ALTER TABLE exercises ADD COLUMN animation_asset_key TEXT NOT NULL DEFAULT '';");
@@ -900,6 +1051,72 @@ function ensureExerciseMediaColumns(database: DatabaseSync) {
   }
 }
 
+function placeholders(values: unknown[]) {
+  return values.map(() => "?").join(",");
+}
+
+function cleanupDuplicateCatalogRows(database: DatabaseSync) {
+  const exerciseRows = database.prepare("SELECT id, name FROM exercises ORDER BY id").all() as Array<{ id: number; name: string }>;
+  const exerciseIdsByName = new Map<string, number[]>();
+
+  for (const row of exerciseRows) {
+    exerciseIdsByName.set(row.name, [...(exerciseIdsByName.get(row.name) ?? []), Number(row.id)]);
+  }
+
+  for (const ids of exerciseIdsByName.values()) {
+    if (ids.length <= 1) {
+      continue;
+    }
+
+    const referenceRows = database
+      .prepare(
+        `SELECT id,
+                (SELECT COUNT(*) FROM workout_exercises WHERE exercise_id = exercises.id) +
+                (SELECT COUNT(*) FROM personal_records WHERE exercise_id = exercises.id) +
+                (SELECT COUNT(*) FROM workout_template_exercises WHERE exercise_id = exercises.id) AS referencesCount
+         FROM exercises
+         WHERE id IN (${placeholders(ids)})
+         ORDER BY referencesCount DESC, id ASC`
+      )
+      .all(...ids) as Array<{ id: number; referencesCount: number }>;
+    const keepId = Number(referenceRows[0]?.id ?? ids[0]);
+    const duplicateIds = ids.filter((id) => id !== keepId);
+
+    if (duplicateIds.length === 0) {
+      continue;
+    }
+
+    database.prepare(`UPDATE workout_exercises SET exercise_id = ? WHERE exercise_id IN (${placeholders(duplicateIds)})`).run(keepId, ...duplicateIds);
+    database.prepare(`UPDATE personal_records SET exercise_id = ? WHERE exercise_id IN (${placeholders(duplicateIds)})`).run(keepId, ...duplicateIds);
+    database.prepare(`UPDATE workout_template_exercises SET exercise_id = ? WHERE exercise_id IN (${placeholders(duplicateIds)})`).run(keepId, ...duplicateIds);
+    database.prepare(`DELETE FROM exercises WHERE id IN (${placeholders(duplicateIds)})`).run(...duplicateIds);
+  }
+
+  const challengeRows = database.prepare("SELECT id, title FROM challenges ORDER BY id").all() as Array<{ id: number; title: string }>;
+  const challengeIdsByTitle = new Map<string, number[]>();
+
+  for (const row of challengeRows) {
+    challengeIdsByTitle.set(row.title, [...(challengeIdsByTitle.get(row.title) ?? []), Number(row.id)]);
+  }
+
+  for (const ids of challengeIdsByTitle.values()) {
+    if (ids.length <= 1) {
+      continue;
+    }
+
+    const keepId = ids[0];
+    const duplicateIds = ids.slice(1);
+    database.prepare(`DELETE FROM user_challenges WHERE challenge_id IN (${placeholders(duplicateIds)})`).run(...duplicateIds);
+    database.prepare(`DELETE FROM challenges WHERE id IN (${placeholders(duplicateIds)})`).run(...duplicateIds);
+    database.prepare("UPDATE user_challenges SET challenge_id = ? WHERE challenge_id = ?").run(keepId, keepId);
+  }
+
+  database.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_exercises_name_unique ON exercises(name);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_challenges_title_unique ON challenges(title);
+  `);
+}
+
 function createAnimationAssetKey(name: string) {
   return name
     .toLowerCase()
@@ -907,15 +1124,74 @@ function createAnimationAssetKey(name: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function exerciseMediaSrc(exercise: ExerciseSeed) {
+  const group = exercise.muscleGroup.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return `/exercise-media/${group}/${createAnimationAssetKey(exercise.name)}-guide.png`;
+}
+
 function syncExerciseAnimationMetadata(database: DatabaseSync) {
   const update = database.prepare(
     `UPDATE exercises
-     SET animation_asset_key = ?
-     WHERE name = ? AND (animation_asset_key IS NULL OR animation_asset_key = '')`
+     SET animation_asset_key = CASE
+           WHEN animation_asset_key IS NULL OR animation_asset_key = '' THEN ?
+           ELSE animation_asset_key
+         END,
+         animation_media_type = 'image',
+         animation_src = ?
+     WHERE name = ?`
   );
 
   for (const exercise of exercises) {
-    update.run(createAnimationAssetKey(exercise.name), exercise.name);
+    update.run(createAnimationAssetKey(exercise.name), exercise.animationSrc ?? exerciseMediaSrc(exercise), exercise.name);
+  }
+}
+
+function syncExerciseCatalog(database: DatabaseSync) {
+  const insertExercise = database.prepare(`
+    INSERT OR IGNORE INTO exercises (
+      name, muscle_group, difficulty, equipment, instructions, common_mistakes,
+      recommended_sets, recommended_reps, animation_type, animation_asset_key,
+      animation_media_type, animation_src, animation_credit, calories_estimate
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  for (const exercise of exercises) {
+    insertExercise.run(
+      exercise.name,
+      exercise.muscleGroup,
+      exercise.difficulty,
+      exercise.equipment,
+      JSON.stringify(exercise.instructions),
+      JSON.stringify(exercise.commonMistakes),
+      exercise.recommendedSets,
+      exercise.recommendedReps,
+      exercise.animationType,
+      createAnimationAssetKey(exercise.name),
+      exercise.animationMediaType ?? "image",
+      exercise.animationSrc ?? exerciseMediaSrc(exercise),
+      exercise.animationCredit ?? null,
+      exercise.caloriesEstimate
+    );
+  }
+
+  syncExerciseAnimationMetadata(database);
+}
+
+function syncBadges(database: DatabaseSync) {
+  const insertBadge = database.prepare("INSERT OR IGNORE INTO badges (title, description, icon) VALUES (?, ?, ?)");
+
+  for (const [title, description, icon] of badges) {
+    insertBadge.run(title, description, icon);
+  }
+}
+
+function syncChallenges(database: DatabaseSync) {
+  const insertChallenge = database.prepare(
+    "INSERT OR IGNORE INTO challenges (title, description, points, metric, target, muscle_group) VALUES (?, ?, ?, ?, ?, ?)"
+  );
+
+  for (const [title, description, points, metric, target, muscleGroup] of challenges) {
+    insertChallenge.run(title, description, points, metric, target, muscleGroup);
   }
 }
 
@@ -959,13 +1235,68 @@ function syncUsers(database: DatabaseSync) {
   }
 }
 
+function syncDefaultTemplates(database: DatabaseSync) {
+  const existingCount = database.prepare("SELECT COUNT(*) AS count FROM workout_templates").get() as { count: number };
+
+  if (Number(existingCount.count) > 0) {
+    return;
+  }
+
+  const exerciseRows = database.prepare("SELECT id, name, recommended_sets AS recommendedSets, recommended_reps AS recommendedReps FROM exercises").all() as Array<{
+    id: number;
+    name: string;
+    recommendedSets: number;
+    recommendedReps: string;
+  }>;
+  const exerciseByName = new Map(exerciseRows.map((exercise) => [exercise.name, exercise]));
+  const now = new Date().toISOString();
+  const templates = [
+    { userId: 1, name: "Chest Day", exercises: ["Bench Press", "Incline Dumbbell Press", "Cable Fly", "Push-ups"] },
+    { userId: 1, name: "Core Focus", exercises: ["Plank", "Crunches", "Hanging Leg Raises"] },
+    { userId: 2, name: "Leg Strength", exercises: ["Back Squat", "Romanian Deadlift", "Leg Press", "Calf Raises"] },
+    { userId: 2, name: "Cardio Engine", exercises: ["Treadmill Intervals", "Rowing Machine", "Battle Ropes"] },
+    { userId: 3, name: "Pull Day", exercises: ["Pull-ups", "Lat Pulldown", "Barbell Row", "Dumbbell Curl"] },
+    { userId: 3, name: "Full Body Power", exercises: ["Deadlift", "Clean and Press", "Kettlebell Swing", "Medicine Ball Slams"] }
+  ];
+  const insertTemplate = database.prepare("INSERT INTO workout_templates (user_id, name, created_at, updated_at) VALUES (?, ?, ?, ?)");
+  const insertExercise = database.prepare(
+    "INSERT INTO workout_template_exercises (template_id, exercise_id, position, sets, notes) VALUES (?, ?, ?, ?, ?)"
+  );
+
+  for (const template of templates) {
+    const templateResult = insertTemplate.run(template.userId, template.name, now, now);
+    const templateId = Number(templateResult.lastInsertRowid);
+
+    template.exercises.forEach((exerciseName, index) => {
+      const exercise = exerciseByName.get(exerciseName);
+
+      if (!exercise) {
+        return;
+      }
+
+      const repsMatch = exercise.recommendedReps.match(/\d+/);
+      const reps = repsMatch ? Number(repsMatch[0]) : 10;
+      const sets = Array.from({ length: Math.min(Math.max(Number(exercise.recommendedSets), 1), 5) }, () => ({
+        weight: 0,
+        reps,
+        completed: false
+      }));
+
+      insertExercise.run(templateId, exercise.id, index + 1, JSON.stringify(sets), "");
+    });
+  }
+}
+
 export function seedDatabase() {
   const database = getDatabase();
   const userCount = database.prepare("SELECT COUNT(*) AS count FROM users").get() as { count: number };
 
   if (userCount.count > 0) {
+    syncExerciseCatalog(database);
+    syncBadges(database);
+    syncChallenges(database);
     syncUsers(database);
-    syncExerciseAnimationMetadata(database);
+    syncDefaultTemplates(database);
     return;
   }
 
@@ -995,6 +1326,9 @@ export function seedDatabase() {
   const insertWorkout = database.prepare(
     "INSERT INTO workouts (user_id, workout_date, notes, total_points, total_calories) VALUES (?, ?, ?, ?, ?)"
   );
+  const insertDailyCheckin = database.prepare(
+    "INSERT INTO daily_checkins (user_id, checkin_date, points, source, created_at) VALUES (?, ?, ?, ?, ?)"
+  );
   const insertWorkoutExercise = database.prepare(
     "INSERT INTO workout_exercises (workout_id, exercise_id, sets, notes, completed_sets, personal_record) VALUES (?, ?, ?, ?, ?, ?)"
   );
@@ -1013,6 +1347,22 @@ export function seedDatabase() {
     insertStats.run(2, 860, 330, 11, 3);
     insertStats.run(3, 720, 210, 9, 2);
 
+    const checkinOffsets =
+      [
+        [1, [-4, -3, -2, -1]],
+        [2, [-3, -2, -1]],
+        [3, [-2, -1]]
+      ] as const;
+
+    for (const [userId, offsets] of checkinOffsets) {
+      for (const offset of offsets) {
+        const date = new Date();
+        date.setDate(date.getDate() + offset);
+        const day = date.toISOString().slice(0, 10);
+        insertDailyCheckin.run(userId, day, 75, "seed", `${day}T10:00:00.000Z`);
+      }
+    }
+
     for (const exercise of exercises) {
       insertExercise.run(
         exercise.name,
@@ -1025,8 +1375,8 @@ export function seedDatabase() {
         exercise.recommendedReps,
         exercise.animationType,
         createAnimationAssetKey(exercise.name),
-        exercise.animationMediaType ?? null,
-        exercise.animationSrc ?? null,
+        exercise.animationMediaType ?? "image",
+        exercise.animationSrc ?? exerciseMediaSrc(exercise),
         exercise.animationCredit ?? null,
         exercise.caloriesEstimate
       );
@@ -1051,13 +1401,10 @@ export function seedDatabase() {
 
     const earnedAt = new Date().toISOString();
     insertUserBadge.run(1, 1, earnedAt);
-    insertUserBadge.run(1, 3, earnedAt);
-    insertUserBadge.run(1, 7, earnedAt);
+    insertUserBadge.run(1, 4, earnedAt);
     insertUserBadge.run(2, 1, earnedAt);
-    insertUserBadge.run(2, 2, earnedAt);
-    insertUserBadge.run(2, 8, earnedAt);
+    insertUserBadge.run(2, 5, earnedAt);
     insertUserBadge.run(3, 1, earnedAt);
-    insertUserBadge.run(3, 4, earnedAt);
 
     const sampleWorkouts = [
       {
@@ -1147,6 +1494,8 @@ export function seedDatabase() {
         }
       }
     }
+
+    syncDefaultTemplates(database);
 
     database.exec("COMMIT;");
   } catch (error) {

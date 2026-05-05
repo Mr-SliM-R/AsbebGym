@@ -10,17 +10,27 @@ type SetEntry = {
   completed: boolean;
 };
 
-const categories = ["Legs", "Chest", "Back", "Shoulders", "Biceps", "Triceps", "Abs", "Cardio", "Full Body"];
+const categories = ["Chest", "Back", "Shoulders", "Biceps", "Triceps", "Legs", "Abs", "Cardio"];
 
 const ranks = [
   { name: "Bronze", minPoints: 0, maxPoints: 499, color: "#f59e0b" },
-  { name: "Silver", minPoints: 500, maxPoints: 1199, color: "#cbd5e1" },
-  { name: "Gold", minPoints: 1200, maxPoints: 2199, color: "#facc15" },
-  { name: "Platinum", minPoints: 2200, maxPoints: 3499, color: "#67e8f9" },
-  { name: "Diamond", minPoints: 3500, maxPoints: 5299, color: "#38bdf8" },
-  { name: "Master", minPoints: 5300, maxPoints: 7499, color: "#fb7185" },
-  { name: "Legend", minPoints: 7500, maxPoints: 999999, color: "#a78bfa" }
+  { name: "Silver", minPoints: 500, maxPoints: 1499, color: "#cbd5e1" },
+  { name: "Gold", minPoints: 1500, maxPoints: 2999, color: "#facc15" },
+  { name: "Diamond", minPoints: 3000, maxPoints: 4999, color: "#38bdf8" },
+  { name: "Master", minPoints: 5000, maxPoints: 7999, color: "#fb7185" },
+  { name: "Titan", minPoints: 8000, maxPoints: 999999, color: "#a78bfa" }
 ];
+
+const dailyCheckInPoints = 75;
+const punishmentIdeas = ["buy protein shake", "100 pushups", "pay dinner", "post gym selfie", "extra leg day"];
+
+const personalRecordTargets = [
+  { key: "bench_press", label: "Bench press", exerciseName: "Bench Press", metric: "kg", sort: "desc" },
+  { key: "squat", label: "Squat", exerciseName: "Back Squat", metric: "kg", sort: "desc" },
+  { key: "deadlift", label: "Deadlift", exerciseName: "Deadlift", metric: "kg", sort: "desc" },
+  { key: "pull_ups", label: "Pull-ups", exerciseName: "Pull-ups", metric: "reps", sort: "desc" },
+  { key: "running_time", label: "Running time", exerciseName: "Running Time", metric: "min", sort: "asc" }
+] as const;
 
 const exerciseSelect = `
   SELECT id, name, muscle_group AS muscleGroup, difficulty, equipment, instructions,
@@ -38,7 +48,7 @@ function json(data: unknown, init?: ResponseInit) {
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Content-Type",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
       ...init?.headers
     }
   });
@@ -64,6 +74,9 @@ function jsonParse<T>(value: unknown, fallback: T): T {
 }
 
 function mapExercise(row: Row) {
+  const assetKey = String(row.animationAssetKey ?? "");
+  const mediaSrc = row.animationSrc ? String(row.animationSrc) : null;
+
   return {
     id: Number(row.id),
     name: String(row.name),
@@ -75,9 +88,9 @@ function mapExercise(row: Row) {
     recommendedSets: Number(row.recommendedSets),
     recommendedReps: String(row.recommendedReps),
     animationType: String(row.animationType),
-    animationAssetKey: String(row.animationAssetKey ?? ""),
+    animationAssetKey: assetKey,
     animationMediaType: row.animationMediaType ? String(row.animationMediaType) : null,
-    animationSrc: row.animationSrc ? String(row.animationSrc) : null,
+    animationSrc: mediaSrc,
     animationCredit: row.animationCredit ? String(row.animationCredit) : null,
     caloriesEstimate: Number(row.caloriesEstimate)
   };
@@ -95,11 +108,18 @@ function mapUser(row: Row) {
   };
 }
 
+function compactUser(user: ReturnType<typeof mapUser>) {
+  return {
+    ...user,
+    avatar: user.avatar.length > 512 ? user.username.slice(0, 1).toUpperCase() : user.avatar
+  };
+}
+
 function getRank(totalPoints: number) {
   const rank = ranks.find((item) => totalPoints >= item.minPoints && totalPoints <= item.maxPoints) ?? ranks[0];
   const nextRank = ranks.find((item) => item.minPoints > totalPoints);
   const range = rank.maxPoints - rank.minPoints + 1;
-  const progress = rank.name === "Legend" ? 100 : Math.min(100, Math.round(((totalPoints - rank.minPoints) / range) * 100));
+  const progress = rank.name === "Titan" ? 100 : Math.min(100, Math.round(((totalPoints - rank.minPoints) / range) * 100));
 
   return {
     ...rank,
@@ -121,6 +141,35 @@ function startOfWeek(date = new Date()) {
 function dateKey(value: string | Date) {
   const date = typeof value === "string" ? new Date(value) : value;
   return date.toISOString().slice(0, 10);
+}
+
+function startOfMonth(date = new Date()) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+}
+
+function startOfNextMonth(date = new Date()) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+}
+
+function daysElapsedThisWeek(date = new Date()) {
+  const day = date.getUTCDay();
+  return day === 0 ? 7 : day;
+}
+
+function formatRecordValue(value: number, metric: string) {
+  if (metric === "kg") return `${value}kg`;
+  if (metric === "min") return `${value} min`;
+  return `${value} ${metric}`;
+}
+
+function buildRivalMessage(event: "dashboard" | "daily-checkin" | "duplicate-checkin" | "record", userName: string, context?: { place?: number; streak?: number }) {
+  if (event === "daily-checkin") return `${userName} trained today. The pressure is on.`;
+  if (event === "duplicate-checkin") return `${userName} already checked in today. No double dipping.`;
+  if (event === "record") return `${userName} raised the bar. Somebody answer that PR.`;
+  if (context?.streak && context.streak >= 7) return "New streak unlocked. Respect.";
+  if (context?.place === 1) return `${userName} is climbing the leaderboard.`;
+  if (userName === "Adel") return "Adel skipped leg day again. Chicken legs detected.";
+  return "The board is tight. One workout can change the mood.";
 }
 
 async function getUserById(env: Env, userId: number) {
@@ -180,6 +229,57 @@ async function calculateCurrentStreak(env: Env, userId: number) {
   }
 
   return streak;
+}
+
+async function calculateCurrentCheckInStreak(env: Env, userId: number) {
+  const rows = await all<{ day: string }>(
+    env,
+    "SELECT checkin_date AS day FROM daily_checkins WHERE user_id = ? ORDER BY checkin_date DESC",
+    userId
+  );
+
+  if (rows.length === 0) return 0;
+
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+
+  if (rows[0].day !== dateKey(today) && rows[0].day !== dateKey(yesterday)) return 0;
+
+  let streak = 0;
+  const expected = new Date(`${rows[0].day}T00:00:00.000Z`);
+
+  for (const row of rows) {
+    if (row.day !== dateKey(expected)) break;
+    streak += 1;
+    expected.setUTCDate(expected.getUTCDate() - 1);
+  }
+
+  return streak;
+}
+
+async function refreshCurrentStreak(env: Env, userId: number) {
+  const streak = await calculateCurrentCheckInStreak(env, userId);
+  await env.DB.prepare("UPDATE user_stats SET current_streak = ? WHERE user_id = ?").bind(streak, userId).run();
+  return streak;
+}
+
+async function getTodayCheckIn(env: Env, userId: number) {
+  const today = dateKey(new Date());
+  const row = await first<{ id: number; points: number; createdAt: string }>(
+    env,
+    "SELECT id, points, created_at AS createdAt FROM daily_checkins WHERE user_id = ? AND checkin_date = ?",
+    userId,
+    today
+  );
+
+  return {
+    completed: Boolean(row),
+    date: today,
+    points: Number(row?.points ?? dailyCheckInPoints),
+    createdAt: row?.createdAt ? String(row.createdAt) : null
+  };
 }
 
 async function getWeeklyProgress(env: Env, userId: number) {
@@ -267,6 +367,171 @@ async function getWorkoutHistory(env: Env, userId: number, limit = 12) {
   );
 }
 
+async function getWorkoutTemplates(env: Env, userId: number) {
+  const templates = await all(
+    env,
+    `SELECT id, user_id AS userId, name, created_at AS createdAt, updated_at AS updatedAt
+     FROM workout_templates
+     WHERE user_id = ?
+     ORDER BY updated_at DESC, id DESC`,
+    userId
+  );
+
+  return Promise.all(
+    templates.map(async (template) => {
+      const entries = await all(
+        env,
+        `SELECT wte.id, wte.exercise_id AS exerciseId, wte.position, wte.sets, wte.notes,
+                e.name, e.muscle_group AS muscleGroup
+         FROM workout_template_exercises wte
+         JOIN exercises e ON e.id = wte.exercise_id
+         WHERE wte.template_id = ?
+         ORDER BY wte.position`,
+        Number(template.id)
+      );
+
+      return {
+        id: Number(template.id),
+        userId: Number(template.userId),
+        name: String(template.name),
+        createdAt: String(template.createdAt),
+        updatedAt: String(template.updatedAt),
+        exercises: entries.map((entry) => ({
+          id: Number(entry.id),
+          exerciseId: Number(entry.exerciseId),
+          name: String(entry.name),
+          muscleGroup: String(entry.muscleGroup),
+          sets: jsonParse<SetEntry[]>(entry.sets, []),
+          notes: String(entry.notes ?? "")
+        }))
+      };
+    })
+  );
+}
+
+async function getWorkoutTemplateById(env: Env, templateId: number) {
+  const row = await first<{ userId: number }>(env, "SELECT user_id AS userId FROM workout_templates WHERE id = ?", templateId);
+  if (!row) return null;
+  return (await getWorkoutTemplates(env, Number(row.userId))).find((template) => template.id === templateId) ?? null;
+}
+
+async function getLastExercisePerformances(env: Env, userId: number) {
+  const rows = await all(
+    env,
+    `SELECT we.exercise_id AS exerciseId, we.sets, we.notes, we.completed_sets AS completedSets,
+            w.id AS workoutId, w.workout_date AS workoutDate,
+            e.name, e.muscle_group AS muscleGroup
+     FROM workout_exercises we
+     JOIN workouts w ON w.id = we.workout_id
+     JOIN exercises e ON e.id = we.exercise_id
+     WHERE w.user_id = ?
+     ORDER BY w.workout_date DESC, we.id DESC`,
+    userId
+  );
+  const seen = new Set<number>();
+
+  return rows.flatMap((row) => {
+    const exerciseId = Number(row.exerciseId);
+    if (seen.has(exerciseId)) return [];
+    seen.add(exerciseId);
+
+    return [
+      {
+        exerciseId,
+        workoutId: Number(row.workoutId),
+        workoutDate: String(row.workoutDate),
+        name: String(row.name),
+        muscleGroup: String(row.muscleGroup),
+        sets: jsonParse<SetEntry[]>(row.sets, []),
+        notes: String(row.notes ?? ""),
+        completedSets: Number(row.completedSets)
+      }
+    ];
+  });
+}
+
+async function getProgressCharts(env: Env, userId: number) {
+  const weeklyProgress = await getWeeklyProgress(env, userId);
+  const muscleRows = await all(
+    env,
+    `SELECT e.muscle_group AS muscleGroup, SUM(we.completed_sets) AS sets
+     FROM workout_exercises we
+     JOIN workouts w ON w.id = we.workout_id
+     JOIN exercises e ON e.id = we.exercise_id
+     WHERE w.user_id = ?
+     GROUP BY e.muscle_group
+     ORDER BY sets DESC`,
+    userId
+  );
+  const recordRows = await all(
+    env,
+    `SELECT pr.exercise_id AS exerciseId, pr.weight, pr.reps, pr.achieved_at AS achievedAt,
+            e.name AS exerciseName, e.muscle_group AS muscleGroup
+     FROM personal_records pr
+     JOIN exercises e ON e.id = pr.exercise_id
+     WHERE pr.user_id = ?
+     ORDER BY pr.achieved_at DESC
+     LIMIT 10`,
+    userId
+  );
+
+  return {
+    volumeByWeek: weeklyProgress.map((week) => ({
+      label: week.day,
+      volume: Number(week.points),
+      workouts: Number(week.workouts)
+    })),
+    muscleBalance: muscleRows.map((row) => ({
+      muscleGroup: String(row.muscleGroup),
+      sets: Number(row.sets ?? 0)
+    })),
+    personalRecordTrend: recordRows.map((row) => {
+      const weight = Number(row.weight);
+      const reps = Number(row.reps);
+      return {
+        exerciseId: Number(row.exerciseId),
+        exerciseName: String(row.exerciseName),
+        muscleGroup: String(row.muscleGroup),
+        value: weight > 0 ? weight : reps,
+        label: weight > 0 ? `${weight}kg x ${reps}` : `${reps} reps`,
+        achievedAt: String(row.achievedAt)
+      };
+    })
+  };
+}
+
+async function getActivityFeed(env: Env, userId: number, limit = 12) {
+  const rows = await all(
+    env,
+    `SELECT w.id, w.workout_date AS createdAt, w.total_points AS totalPoints, w.total_calories AS totalCalories,
+            u.id AS userId, u.username, u.avatar, u.weight_goal AS weightGoal, u.favorite_muscle_group AS favoriteMuscleGroup
+     FROM workouts w
+     JOIN users u ON u.id = w.user_id
+     ORDER BY w.workout_date DESC
+     LIMIT ?`,
+    limit
+  );
+
+  return rows.map((row) => {
+    const user = compactUser(mapUser({
+      id: row.userId,
+      username: row.username,
+      avatar: row.avatar,
+      weightGoal: row.weightGoal,
+      favoriteMuscleGroup: row.favoriteMuscleGroup
+    }));
+
+    return {
+      id: `workout-${Number(row.id)}-${String(row.createdAt)}`,
+      type: "workout",
+      title: `${user.username} completed a workout`,
+      description: `+${Number(row.totalPoints)} pts - ${Number(row.totalCalories)} cal`,
+      user: compactUser(user),
+      createdAt: String(row.createdAt)
+    };
+  });
+}
+
 async function awardBadge(env: Env, userId: number, title: string) {
   const badge = await first<{ id: number }>(env, "SELECT id FROM badges WHERE title = ?", title);
   if (!badge) return;
@@ -293,6 +558,10 @@ async function getGroupWorkoutCount(env: Env, userId: number, group: string) {
 
 async function getChallengeProgress(env: Env, userId: number, metric: string, muscleGroup?: string | null) {
   const weekStart = startOfWeek().toISOString();
+
+  if (metric.startsWith("weekly_")) {
+    return getWeeklyMetric(env, userId, metric);
+  }
 
   if (metric === "workouts") {
     const row = await first<{ count: number }>(
@@ -395,15 +664,13 @@ async function refreshBadges(env: Env, userId: number) {
   if (!stats) return;
 
   if (stats.workoutsCompleted >= 1) await awardBadge(env, userId, "First Workout");
-  if ((await getGroupWorkoutCount(env, userId, "Legs")) >= 2) await awardBadge(env, userId, "Leg Beast");
-  if ((await getGroupWorkoutCount(env, userId, "Chest")) >= 2) await awardBadge(env, userId, "Chest Warrior");
-  if ((await getGroupWorkoutCount(env, userId, "Back")) >= 2) await awardBadge(env, userId, "Back Monster");
-  if ((await getGroupWorkoutCount(env, userId, "Abs")) >= 3) await awardBadge(env, userId, "Abs Machine");
-  if (stats.currentStreak >= 5) await awardBadge(env, userId, "5-Day Streak");
-
-  const records = await first<{ count: number }>(env, "SELECT COUNT(*) AS count FROM personal_records WHERE user_id = ?", userId);
-  if (Number(records?.count ?? 0) > 0) await awardBadge(env, userId, "Personal Record King");
-  if ((await getChallengeProgress(env, userId, "workouts")) >= 4) await awardBadge(env, userId, "Consistency Master");
+  if (stats.currentStreak >= 7) await awardBadge(env, userId, "7-Day Streak");
+  if (stats.currentStreak >= 30) await awardBadge(env, userId, "30-Day Streak");
+  if ((await getGroupWorkoutCount(env, userId, "Chest")) >= 3) await awardBadge(env, userId, "Chest Warrior");
+  if ((await getGroupWorkoutCount(env, userId, "Legs")) >= 2) await awardBadge(env, userId, "Leg Day Survivor");
+  if ((await getGroupWorkoutCount(env, userId, "Cardio")) >= 3) await awardBadge(env, userId, "Cardio Machine");
+  if (stats.totalPoints >= 1000) await awardBadge(env, userId, "1000 Points");
+  if (stats.totalPoints >= 5000) await awardBadge(env, userId, "5000 Points");
 }
 
 async function getPersonalRecords(env: Env, userId: number) {
@@ -417,6 +684,250 @@ async function getPersonalRecords(env: Env, userId: number) {
      ORDER BY pr.achieved_at DESC`,
     userId
   );
+}
+
+async function getBadgesForUser(env: Env, userId: number) {
+  const rows = await all(
+    env,
+    `SELECT b.id, b.title, b.description, b.icon, ub.earned_at AS earnedAt
+     FROM badges b
+     LEFT JOIN user_badges ub ON ub.badge_id = b.id AND ub.user_id = ?
+     ORDER BY b.id`,
+    userId
+  );
+
+  return rows.map((badge) => ({
+    id: Number(badge.id),
+    title: String(badge.title),
+    description: String(badge.description),
+    icon: String(badge.icon),
+    earnedAt: badge.earnedAt ? String(badge.earnedAt) : null,
+    unlocked: Boolean(badge.earnedAt)
+  }));
+}
+
+async function getExerciseByName(env: Env, name: string) {
+  const row = await first(env, `${exerciseSelect} WHERE lower(name) = lower(?)`, name);
+  return row ? mapExercise(row) : undefined;
+}
+
+async function getPersonalRecordBoards(env: Env) {
+  const users = (await all(
+    env,
+    "SELECT id, username, avatar, weight_goal AS weightGoal, favorite_muscle_group AS favoriteMuscleGroup FROM users ORDER BY id"
+  )).map((row) => compactUser(mapUser(row)));
+
+  return Promise.all(
+    personalRecordTargets.map(async (target) => {
+      const exercise = await getExerciseByName(env, target.exerciseName);
+      const records = await Promise.all(
+        users.map(async (user) => {
+          const record = exercise
+            ? await first(
+                env,
+                `SELECT id, weight, reps, achieved_at AS achievedAt
+                 FROM personal_records
+                 WHERE user_id = ? AND exercise_id = ?
+                 ORDER BY ${target.key === "running_time" ? "weight ASC" : target.key === "pull_ups" ? "reps DESC" : "weight DESC"}, achieved_at DESC
+                 LIMIT 1`,
+                user.id,
+                exercise.id
+              )
+            : undefined;
+          const value = record ? (target.key === "pull_ups" ? Number(record.reps) : Number(record.weight)) : null;
+
+          return {
+            user,
+            record: record
+              ? {
+                  id: Number(record.id),
+                  exerciseId: exercise?.id ?? 0,
+                  exerciseName: exercise?.name ?? target.exerciseName,
+                  muscleGroup: exercise?.muscleGroup ?? "",
+                  weight: Number(record.weight),
+                  reps: Number(record.reps),
+                  achievedAt: String(record.achievedAt)
+                }
+              : null,
+            value,
+            displayValue: value === null ? "No record" : formatRecordValue(value, target.metric)
+          };
+        })
+      );
+      const sortedRecords = records.sort((a, b) => {
+        if (a.value === null && b.value === null) return a.user.id - b.user.id;
+        if (a.value === null) return 1;
+        if (b.value === null) return -1;
+        return target.sort === "asc" ? a.value - b.value : b.value - a.value;
+      });
+
+      return {
+        key: target.key,
+        label: target.label,
+        exerciseId: exercise?.id ?? null,
+        exerciseName: exercise?.name ?? target.exerciseName,
+        metric: target.metric,
+        sort: target.sort,
+        records: sortedRecords.map((record, index) => ({ ...record, place: record.value === null ? null : index + 1 }))
+      };
+    })
+  );
+}
+
+async function getWeeklyMetric(env: Env, userId: number, metric: string) {
+  const weekStart = startOfWeek().toISOString();
+
+  if (metric === "weekly_workouts") {
+    const workoutRow = await first<{ count: number }>(
+      env,
+      "SELECT COUNT(*) AS count FROM workouts WHERE user_id = ? AND workout_date >= ?",
+      userId,
+      weekStart
+    );
+    const checkinRow = await first<{ count: number }>(
+      env,
+      "SELECT COUNT(*) AS count FROM daily_checkins WHERE user_id = ? AND checkin_date >= ?",
+      userId,
+      weekStart.slice(0, 10)
+    );
+    return Number(workoutRow?.count ?? 0) + Number(checkinRow?.count ?? 0);
+  }
+
+  if (metric === "weekly_points") {
+    const workoutRow = await first<{ total: number | null }>(
+      env,
+      "SELECT SUM(total_points) AS total FROM workouts WHERE user_id = ? AND workout_date >= ?",
+      userId,
+      weekStart
+    );
+    const checkinRow = await first<{ total: number | null }>(
+      env,
+      "SELECT SUM(points) AS total FROM daily_checkins WHERE user_id = ? AND checkin_date >= ?",
+      userId,
+      weekStart.slice(0, 10)
+    );
+    return Number(workoutRow?.total ?? 0) + Number(checkinRow?.total ?? 0);
+  }
+
+  if (metric === "weekly_chest" || metric === "weekly_cardio") {
+    const group = metric === "weekly_chest" ? "Chest" : "Cardio";
+    const row = await first<{ count: number }>(
+      env,
+      `SELECT COUNT(DISTINCT w.id) AS count
+       FROM workouts w
+       JOIN workout_exercises we ON we.workout_id = w.id
+       JOIN exercises e ON e.id = we.exercise_id
+       WHERE w.user_id = ? AND w.workout_date >= ? AND e.muscle_group = ?`,
+      userId,
+      weekStart,
+      group
+    );
+    return Number(row?.count ?? 0);
+  }
+
+  if (metric === "weekly_no_skip") {
+    const row = await first<{ count: number }>(
+      env,
+      "SELECT COUNT(DISTINCT checkin_date) AS count FROM daily_checkins WHERE user_id = ? AND checkin_date >= ?",
+      userId,
+      weekStart.slice(0, 10)
+    );
+    return Number(row?.count ?? 0);
+  }
+
+  return 0;
+}
+
+async function getWeeklyChallenges(env: Env) {
+  const users = (await all(
+    env,
+    "SELECT id, username, avatar, weight_goal AS weightGoal, favorite_muscle_group AS favoriteMuscleGroup FROM users ORDER BY id"
+  )).map((row) => compactUser(mapUser(row)));
+  const challengeRows = await all(
+    env,
+    "SELECT id, title, description, points, metric, target, muscle_group AS muscleGroup FROM challenges WHERE metric LIKE 'weekly_%' ORDER BY id"
+  );
+  const elapsedDays = daysElapsedThisWeek();
+
+  return {
+    weekStart: dateKey(startOfWeek()),
+    generatedAt: new Date().toISOString(),
+    challenges: await Promise.all(
+      challengeRows.map(async (challenge) => {
+        const metric = String(challenge.metric);
+        const leaderboard = await Promise.all(
+          users.map(async (user) => {
+            const value = await getWeeklyMetric(env, user.id, metric);
+            const target = metric === "weekly_no_skip" ? elapsedDays : Number(challenge.target);
+
+            return {
+              user,
+              value,
+              target,
+              completed: metric === "weekly_no_skip" ? value >= elapsedDays : value >= target,
+              label: metric === "weekly_points" ? `${value} pts` : metric === "weekly_no_skip" ? `${value}/${elapsedDays} days` : `${value}`
+            };
+          })
+        );
+
+        const sorted = leaderboard.sort((a, b) => b.value - a.value || a.user.id - b.user.id);
+
+        return {
+          id: Number(challenge.id),
+          title: String(challenge.title),
+          description: String(challenge.description),
+          points: Number(challenge.points),
+          metric,
+          target: metric === "weekly_no_skip" ? elapsedDays : Number(challenge.target),
+          muscleGroup: challenge.muscleGroup ? String(challenge.muscleGroup) : null,
+          leaderboard: sorted.map((entry, index) => ({ ...entry, place: index + 1 }))
+        };
+      })
+    )
+  };
+}
+
+async function getMonthlyLoser(env: Env) {
+  const monthStart = startOfMonth();
+  const nextMonth = startOfNextMonth();
+  const users = (await all(
+    env,
+    "SELECT id, username, avatar, weight_goal AS weightGoal, favorite_muscle_group AS favoriteMuscleGroup FROM users ORDER BY id"
+  )).map((row) => compactUser(mapUser(row)));
+  const rows = await Promise.all(
+    users.map(async (user) => {
+      const workoutRow = await first<{ total: number | null }>(
+        env,
+        "SELECT SUM(total_points) AS total FROM workouts WHERE user_id = ? AND workout_date >= ? AND workout_date < ?",
+        user.id,
+        monthStart.toISOString(),
+        nextMonth.toISOString()
+      );
+      const checkinRow = await first<{ total: number | null }>(
+        env,
+        "SELECT SUM(points) AS total FROM daily_checkins WHERE user_id = ? AND checkin_date >= ? AND checkin_date < ?",
+        user.id,
+        dateKey(monthStart),
+        dateKey(nextMonth)
+      );
+
+      return {
+        user,
+        points: Number(workoutRow?.total ?? 0) + Number(checkinRow?.total ?? 0)
+      };
+    })
+  );
+  const loser = rows.sort((a, b) => a.points - b.points || a.user.id - b.user.id)[0];
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+  return {
+    user: loser.user,
+    points: loser.points,
+    status: today.getUTCMonth() !== tomorrow.getUTCMonth() ? "Monthly loser" : "Current lowest",
+    punishments: punishmentIdeas
+  };
 }
 
 async function getSuggestedWorkout(env: Env, userId: number) {
@@ -455,7 +966,7 @@ async function getLeaderboard(env: Env) {
       const totalPoints = Number(row.totalPoints);
       return {
         place: index + 1,
-        user: mapUser(row),
+        user: compactUser(mapUser(row)),
         stats: {
           totalPoints,
           weeklyPoints: Number(row.weeklyPoints),
@@ -475,11 +986,122 @@ async function getMotivationalMessage(env: Env, userId: number) {
   const friend = leaderboard.find((item) => item.user.id !== userId);
 
   if (!current || !friend) return "Start strong today and make the board move.";
+  const streak = Number(current.stats.currentStreak);
+
+  if (streak >= 7) return buildRivalMessage("dashboard", current.user.username, { place: current.place, streak });
 
   const difference = current.stats.totalPoints - friend.stats.totalPoints;
   if (difference > 0) return `You are ahead by ${difference} points. Protect the lead with one clean session.`;
   if (difference < 0) return `${friend.user.username} is ahead by ${Math.abs(difference)} points. A focused workout closes the gap fast.`;
   return "You are tied. The next completed set matters.";
+}
+
+async function handleDailyCheckIn(request: Request, env: Env) {
+  const body = (await request.json().catch(() => ({}))) as { userId?: number };
+  const userId = Number(body.userId);
+  const user = await getUserById(env, userId);
+
+  if (!user) return json({ message: "Invalid user." }, { status: 400 });
+
+  const today = dateKey(new Date());
+  const existing = await first<{ id: number }>(
+    env,
+    "SELECT id FROM daily_checkins WHERE user_id = ? AND checkin_date = ?",
+    userId,
+    today
+  );
+
+  if (existing) {
+    const streak = await refreshCurrentStreak(env, userId);
+    const stats = await getStatsByUserId(env, userId);
+    return json({
+      alreadyCheckedIn: true,
+      todayCheckIn: await getTodayCheckIn(env, userId),
+      stats,
+      rank: getRank(stats?.totalPoints ?? 0),
+      message: buildRivalMessage("duplicate-checkin", user.username, { streak })
+    });
+  }
+
+  await env.DB.prepare(
+    "INSERT INTO daily_checkins (user_id, checkin_date, points, source, created_at) VALUES (?, ?, ?, ?, ?)"
+  )
+    .bind(userId, today, dailyCheckInPoints, "daily_button", new Date().toISOString())
+    .run();
+
+  await env.DB.prepare(
+    `UPDATE user_stats
+     SET total_points = total_points + ?,
+         weekly_points = weekly_points + ?,
+         workouts_completed = workouts_completed + 1
+     WHERE user_id = ?`
+  )
+    .bind(dailyCheckInPoints, dailyCheckInPoints, userId)
+    .run();
+
+  const streak = await refreshCurrentStreak(env, userId);
+  await refreshBadges(env, userId);
+  const stats = await getStatsByUserId(env, userId);
+
+  return json(
+    {
+      alreadyCheckedIn: false,
+      pointsAdded: dailyCheckInPoints,
+      todayCheckIn: await getTodayCheckIn(env, userId),
+      stats,
+      rank: getRank(stats?.totalPoints ?? 0),
+      message: buildRivalMessage("daily-checkin", user.username, { streak })
+    },
+    { status: 201 }
+  );
+}
+
+async function handlePersonalRecordUpdate(request: Request, env: Env) {
+  const body = (await request.json().catch(() => ({}))) as {
+    userId?: number;
+    exerciseId?: number;
+    exerciseName?: string;
+    value?: number;
+    reps?: number;
+  };
+  const userId = Number(body.userId);
+  const value = Number(body.value);
+  const reps = Number(body.reps ?? 1);
+  const user = await getUserById(env, userId);
+
+  if (!user) return json({ message: "Invalid user." }, { status: 400 });
+  if (!Number.isFinite(value) || value <= 0) return json({ message: "Record value must be greater than zero." }, { status: 400 });
+
+  const exercise = body.exerciseId
+    ? await getExerciseById(env, Number(body.exerciseId))
+    : await getExerciseByName(env, String(body.exerciseName ?? ""));
+
+  if (!exercise) return json({ message: "Exercise not found." }, { status: 404 });
+
+  const target = personalRecordTargets.find((item) => item.exerciseName === exercise.name);
+  const recordWeight = target?.key === "pull_ups" ? 0 : value;
+  const recordReps = target?.key === "pull_ups" ? Math.round(value) : Math.max(1, Math.round(reps));
+  const now = new Date().toISOString();
+
+  await env.DB.prepare("DELETE FROM personal_records WHERE user_id = ? AND exercise_id = ?").bind(userId, exercise.id).run();
+  await env.DB.prepare("INSERT INTO personal_records (user_id, exercise_id, weight, reps, achieved_at) VALUES (?, ?, ?, ?, ?)")
+    .bind(userId, exercise.id, recordWeight, recordReps, now)
+    .run();
+
+  await refreshBadges(env, userId);
+
+  return json({
+    message: buildRivalMessage("record", user.username),
+    record: {
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+      muscleGroup: exercise.muscleGroup,
+      weight: recordWeight,
+      reps: recordReps,
+      achievedAt: now
+    },
+    leaderboards: await getPersonalRecordBoards(env)
+  });
 }
 
 async function handleApi(request: Request, env: Env, url: URL) {
@@ -535,10 +1157,11 @@ async function handleApi(request: Request, env: Env, url: URL) {
       categories,
       ranks,
       pointRules: [
+        { label: "Daily workout check-in", points: dailyCheckInPoints },
         { label: "Complete workout", points: 50 },
         { label: "Complete exercise", points: 10 },
         { label: "Personal record", points: 30 },
-        { label: "5-day streak", points: 100 },
+        { label: "7-day streak badge", points: 0 },
         { label: "Weekly challenge completed", points: 150 }
       ]
     });
@@ -548,9 +1171,14 @@ async function handleApi(request: Request, env: Env, url: URL) {
   if (request.method === "GET" && dashboardMatch) {
     const userId = Number(dashboardMatch[1]);
     const user = await getUserById(env, userId);
+
+    if (!user) return json({ message: "User not found." }, { status: 404 });
+
+    await refreshCurrentStreak(env, userId);
+    await refreshBadges(env, userId);
     const stats = await getStatsByUserId(env, userId);
 
-    if (!user || !stats) return json({ message: "User not found." }, { status: 404 });
+    if (!stats) return json({ message: "User not found." }, { status: 404 });
 
     const friendRow = await first(
       env,
@@ -574,7 +1202,7 @@ async function handleApi(request: Request, env: Env, url: URL) {
       weeklyProgress: await getWeeklyProgress(env, userId),
       friendComparison: friendRow
         ? {
-            user: mapUser(friendRow),
+            user: compactUser(mapUser(friendRow)),
             stats: {
               totalPoints: Number(friendRow.totalPoints),
               weeklyPoints: Number(friendRow.weeklyPoints),
@@ -585,8 +1213,23 @@ async function handleApi(request: Request, env: Env, url: URL) {
           }
         : null,
       motivationalMessage: await getMotivationalMessage(env, userId),
-      recentWorkouts: await getWorkoutHistory(env, userId, 3)
+      recentWorkouts: await getWorkoutHistory(env, userId, 3),
+      todayCheckIn: await getTodayCheckIn(env, userId),
+      leaderboard: await getLeaderboard(env),
+      weeklyChallenges: await getWeeklyChallenges(env),
+      badges: await getBadgesForUser(env, userId),
+      personalRecordBoards: await getPersonalRecordBoards(env),
+      monthlyLoser: await getMonthlyLoser(env),
+      progressCharts: await getProgressCharts(env, userId),
+      activityFeed: await getActivityFeed(env, userId, 12)
     });
+  }
+
+  const dashboardSummaryMatch = path.match(/^\/api\/dashboard-summary\/(\d+)$/);
+  if (request.method === "GET" && dashboardSummaryMatch) {
+    const summaryUrl = new URL(request.url);
+    summaryUrl.pathname = `/api/dashboard/${dashboardSummaryMatch[1]}`;
+    return handleApi(new Request(summaryUrl, request), env, summaryUrl);
   }
 
   if (request.method === "GET" && path === "/api/exercises") {
@@ -619,12 +1262,100 @@ async function handleApi(request: Request, env: Env, url: URL) {
     return json(await getWorkoutHistory(env, Number(workoutsMatch[1]), 50));
   }
 
+  const workoutContextMatch = path.match(/^\/api\/workout-context\/(\d+)$/);
+  if (request.method === "GET" && workoutContextMatch) {
+    const userId = Number(workoutContextMatch[1]);
+    const user = await getUserById(env, userId);
+    if (!user) return json({ message: "User not found." }, { status: 404 });
+
+    return json({
+      templates: await getWorkoutTemplates(env, userId),
+      lastPerformances: await getLastExercisePerformances(env, userId)
+    });
+  }
+
+  if (request.method === "POST" && path === "/api/workout-templates") {
+    const body = (await request.json().catch(() => ({}))) as {
+      userId?: number;
+      name?: string;
+      exercises?: Array<{ exerciseId?: number; sets?: Array<Partial<SetEntry>>; notes?: string }>;
+    };
+    const userId = Number(body.userId);
+    const user = await getUserById(env, userId);
+    const name = String(body.name ?? "").trim();
+
+    if (!user) return json({ message: "Invalid user." }, { status: 400 });
+    if (!name) return json({ message: "Template name is required." }, { status: 400 });
+
+    const entries = body.exercises ?? [];
+    if (entries.length === 0) return json({ message: "Add at least one exercise to save a template." }, { status: 400 });
+
+    const now = new Date().toISOString();
+    const templateResult = await env.DB.prepare("INSERT INTO workout_templates (user_id, name, created_at, updated_at) VALUES (?, ?, ?, ?)")
+      .bind(userId, name.slice(0, 80), now, now)
+      .run();
+    const templateId = Number(templateResult.meta.last_row_id);
+
+    for (const [index, entry] of entries.entries()) {
+      const exercise = await getExerciseById(env, Number(entry.exerciseId));
+      if (!exercise) continue;
+      const sets = Array.isArray(entry.sets)
+        ? entry.sets.map((set) => ({ weight: Number(set.weight || 0), reps: Number(set.reps || 0), completed: false }))
+        : [];
+
+      await env.DB.prepare("INSERT INTO workout_template_exercises (template_id, exercise_id, position, sets, notes) VALUES (?, ?, ?, ?, ?)")
+        .bind(templateId, exercise.id, index + 1, JSON.stringify(sets), String(entry.notes ?? ""))
+        .run();
+    }
+
+    return json(await getWorkoutTemplateById(env, templateId), { status: 201 });
+  }
+
+  const templateDeleteMatch = path.match(/^\/api\/workout-templates\/(\d+)$/);
+  if (request.method === "DELETE" && templateDeleteMatch) {
+    const templateId = Number(templateDeleteMatch[1]);
+    const userId = Number(url.searchParams.get("userId") ?? 0);
+    const row = await first<{ userId: number }>(env, "SELECT user_id AS userId FROM workout_templates WHERE id = ?", templateId);
+
+    if (!row) return json({ message: "Template not found." }, { status: 404 });
+    if (Number(row.userId) !== userId) return json({ message: "You can only delete your own templates." }, { status: 403 });
+
+    await env.DB.prepare("DELETE FROM workout_templates WHERE id = ?").bind(templateId).run();
+    return json({ ok: true });
+  }
+
   if (request.method === "POST" && path === "/api/workouts") {
     return saveWorkout(request, env);
   }
 
+  if (request.method === "POST" && path === "/api/checkins/daily") {
+    return handleDailyCheckIn(request, env);
+  }
+
   if (request.method === "GET" && path === "/api/leaderboard") {
+    const users = await all<{ id: number }>(env, "SELECT id FROM users");
+    await Promise.all(users.map((user) => refreshCurrentStreak(env, Number(user.id))));
     return json(await getLeaderboard(env));
+  }
+
+  if (request.method === "GET" && path === "/api/weekly-challenges") {
+    return json(await getWeeklyChallenges(env));
+  }
+
+  if (request.method === "GET" && path === "/api/personal-records/leaderboard") {
+    return json(await getPersonalRecordBoards(env));
+  }
+
+  if (request.method === "PATCH" && path === "/api/personal-records") {
+    return handlePersonalRecordUpdate(request, env);
+  }
+
+  const badgesMatch = path.match(/^\/api\/badges\/(\d+)$/);
+  if (request.method === "GET" && badgesMatch) {
+    const userId = Number(badgesMatch[1]);
+    await refreshCurrentStreak(env, userId);
+    await refreshBadges(env, userId);
+    return json(await getBadgesForUser(env, userId));
   }
 
   const challengesMatch = path.match(/^\/api\/challenges\/(\d+)$/);
@@ -660,30 +1391,16 @@ async function handleApi(request: Request, env: Env, url: URL) {
   if (request.method === "GET" && profileMatch) {
     const userId = Number(profileMatch[1]);
     const user = await getUserById(env, userId);
+    await refreshCurrentStreak(env, userId);
+    await refreshBadges(env, userId);
     const stats = await getStatsByUserId(env, userId);
     if (!user || !stats) return json({ message: "User not found." }, { status: 404 });
-
-    const badges = await all(
-      env,
-      `SELECT b.id, b.title, b.description, b.icon, ub.earned_at AS earnedAt
-       FROM user_badges ub
-       JOIN badges b ON b.id = ub.badge_id
-       WHERE ub.user_id = ?
-       ORDER BY ub.earned_at DESC`,
-      userId
-    );
 
     return json({
       user,
       stats,
       rank: getRank(stats.totalPoints),
-      badges: badges.map((badge) => ({
-        id: Number(badge.id),
-        title: String(badge.title),
-        description: String(badge.description),
-        icon: String(badge.icon),
-        earnedAt: String(badge.earnedAt)
-      })),
+      badges: await getBadgesForUser(env, userId),
       workoutHistory: await getWorkoutHistory(env, userId, 20),
       personalRecords: (await getPersonalRecords(env, userId)).map((record) => ({
         id: Number(record.id),
@@ -751,7 +1468,6 @@ async function saveWorkout(request: Request, env: Env) {
   const completedEntries = normalizedEntries.filter((entry) => entry.completedSets > 0);
   if (completedEntries.length === 0) return json({ message: "Complete at least one set before saving." }, { status: 400 });
 
-  const previousStats = await getStatsByUserId(env, userId);
   let personalRecordCount = 0;
   const now = new Date().toISOString();
 
@@ -809,19 +1525,13 @@ async function saveWorkout(request: Request, env: Env) {
     .bind(totalPoints, totalPoints, userId)
     .run();
 
-  const streak = await calculateCurrentStreak(env, userId);
-  await env.DB.prepare("UPDATE user_stats SET current_streak = ? WHERE user_id = ?").bind(streak, userId).run();
+  await env.DB.prepare(
+    "INSERT OR IGNORE INTO daily_checkins (user_id, checkin_date, points, source, created_at) VALUES (?, ?, ?, ?, ?)"
+  )
+    .bind(userId, dateKey(now), 0, "saved_workout", now)
+    .run();
 
-  if ((previousStats?.currentStreak ?? 0) < 5 && streak >= 5) {
-    await env.DB.prepare(
-      `UPDATE user_stats
-       SET total_points = total_points + 100,
-           weekly_points = weekly_points + 100
-       WHERE user_id = ?`
-    )
-      .bind(userId)
-      .run();
-  }
+  await refreshCurrentStreak(env, userId);
 
   await refreshChallenges(env, userId);
   await refreshBadges(env, userId);

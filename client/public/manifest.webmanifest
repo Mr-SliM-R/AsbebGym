@@ -1,0 +1,17 @@
+{
+  "name": "Gym Rival",
+  "short_name": "Gym Rival",
+  "description": "Private fitness groups, workout tracking, leaderboards, and challenges.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070a0f",
+  "theme_color": "#40ff9a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

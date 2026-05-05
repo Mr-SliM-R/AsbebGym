@@ -3,9 +3,11 @@ import { AppShell } from "./components/AppShell";
 import { useAuth } from "./auth";
 import { ChallengesPage } from "./pages/ChallengesPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { BusinessPage } from "./pages/BusinessPage";
 import { ExerciseDetailPage } from "./pages/ExerciseDetailPage";
 import { ExerciseLibraryPage } from "./pages/ExerciseLibraryPage";
 import { LeaderboardPage } from "./pages/LeaderboardPage";
+import { LegalPage } from "./pages/LegalPage";
 import { LoginPage } from "./pages/LoginPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { WorkoutTrackerPage } from "./pages/WorkoutTrackerPage";
@@ -35,6 +37,8 @@ export default function App() {
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/challenges" element={<ChallengesPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/business" element={<BusinessPage />} />
+        <Route path="/legal" element={<LegalPage />} />
       </Route>
       <Route path="*" element={<Navigate to={user ? "/" : "/login"} replace />} />
     </Routes>

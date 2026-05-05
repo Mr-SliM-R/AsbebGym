@@ -75,7 +75,7 @@ export function LeaderboardTable({ entries }: LeaderboardTableProps) {
       <div className="border-t border-white/10 p-4">
         {entries.map((entry) => (
           <div key={entry.user.id} className="mb-3 last:mb-0">
-            <RankBadge rank={entry.rank} />
+            <RankBadge rank={entry.rank} totalPoints={entry.stats.totalPoints} />
           </div>
         ))}
       </div>

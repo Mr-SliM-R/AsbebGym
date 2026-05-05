@@ -58,9 +58,10 @@ npm run cf:deploy
 
 Cloudflare serves the React app and routes `/api/*` to the Worker API.
 
-For an existing Cloudflare D1 database that already has data, run the non-destructive user sync instead of reseeding:
+For an existing Cloudflare D1 database that already has data, run the competition migration instead of reseeding:
 
 ```bash
+npm run cf:d1:migrate:competition
 npm run cf:d1:users
 ```
 
@@ -109,10 +110,16 @@ Gym Rival/
 - `GET /api/exercises/:id`
 - `GET /api/workouts/:userId`
 - `POST /api/workouts`
+- `POST /api/checkins/daily`
 - `GET /api/leaderboard`
+- `GET /api/weekly-challenges`
 - `GET /api/challenges/:userId`
 - `PATCH /api/challenges/:userId/:challengeId`
+- `GET /api/personal-records/leaderboard`
+- `PATCH /api/personal-records`
+- `GET /api/badges/:userId`
 - `GET /api/profile/:userId`
+- `GET /api/dashboard-summary/:userId`
 
 ## Database Schema
 
@@ -122,6 +129,7 @@ Core tables:
 - `user_stats`
 - `exercises`
 - `workouts`
+- `daily_checkins`
 - `workout_exercises`
 - `personal_records`
 - `badges`

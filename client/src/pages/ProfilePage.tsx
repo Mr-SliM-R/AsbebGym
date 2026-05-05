@@ -1,4 +1,5 @@
 import {
+  Activity,
   CalendarCheck,
   Camera,
   CircleDot,
@@ -10,7 +11,7 @@ import {
   Shield,
   Trophy
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { ErrorState, LoadingState } from "../components/PageState";
@@ -21,6 +22,7 @@ import type { Badge, ProfileData } from "../types";
 import { formatDate, formatShortDate } from "../utils";
 
 const badgeIconMap = {
+  Activity,
   Medal,
   Dumbbell,
   Shield,
@@ -36,20 +38,22 @@ function BadgePill({ badge }: { badge: Badge }) {
   const { t } = useI18n();
 
   return (
-    <div className="surface-panel p-4">
+    <div className={`surface-panel p-4 ${badge.unlocked ? "" : "opacity-65"}`}>
       <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-rival-amber/15 text-rival-amber">
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${badge.unlocked ? "bg-rival-amber/15 text-rival-amber" : "bg-white/[0.055] text-slate-500"}`}>
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
           <div className="font-black text-white">{t(badge.title)}</div>
           <div className="mt-1 text-sm leading-6 text-slate-400">{t(badge.description)}</div>
-          <div className="mt-2 text-xs font-bold text-slate-500">{formatDate(badge.earnedAt)}</div>
+          <div className="mt-2 text-xs font-bold text-slate-500">{badge.earnedAt ? formatDate(badge.earnedAt) : t("Quest locked")}</div>
         </div>
       </div>
     </div>
   );
 }
+
+const recordOptions = ["Bench Press", "Back Squat", "Deadlift", "Pull-ups", "Running Time"];
 
 export function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -58,6 +62,11 @@ export function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [avatarMessage, setAvatarMessage] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [recordExercise, setRecordExercise] = useState(recordOptions[0]);
+  const [recordValue, setRecordValue] = useState("");
+  const [recordReps, setRecordReps] = useState("1");
+  const [recordMessage, setRecordMessage] = useState<string | null>(null);
+  const [savingRecord, setSavingRecord] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -96,6 +105,31 @@ export function ProfilePage() {
       setAvatarMessage(err instanceof Error ? t(err.message) : t("Upload failed."));
     } finally {
       setUploadingAvatar(false);
+    }
+  }
+
+  async function handleRecordSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!user) return;
+
+    setSavingRecord(true);
+    setRecordMessage(null);
+
+    try {
+      const result = await api.updatePersonalRecord({
+        userId: user.id,
+        exerciseName: recordExercise,
+        value: Number(recordValue),
+        reps: Number(recordReps || 1)
+      });
+      setRecordMessage(t(result.message));
+      setRecordValue("");
+      const refreshed = await api.profile(user.id);
+      setProfile(refreshed);
+    } catch (err) {
+      setRecordMessage(err instanceof Error ? t(err.message) : t("Record could not be saved."));
+    } finally {
+      setSavingRecord(false);
     }
   }
 
@@ -150,7 +184,7 @@ export function ProfilePage() {
             </div>
           </div>
           <div className="min-w-[280px]">
-            <RankBadge rank={profile.rank} />
+            <RankBadge rank={profile.rank} totalPoints={profile.stats.totalPoints} />
           </div>
         </div>
       </section>
@@ -176,7 +210,7 @@ export function ProfilePage() {
 
       <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <div className="surface-panel p-5">
-          <h2 className="text-xl font-black text-white">{t("Badges Earned")}</h2>
+          <h2 className="text-xl font-black text-white">{t("Badges / Quests")}</h2>
           <div className="mt-5 grid gap-3">
             {profile.badges.length > 0 ? (
               profile.badges.map((badge) => <BadgePill key={badge.id} badge={badge} />)
@@ -188,6 +222,48 @@ export function ProfilePage() {
 
         <div className="surface-panel p-5">
           <h2 className="text-xl font-black text-white">{t("Personal Records")}</h2>
+          <form onSubmit={handleRecordSubmit} className="mt-5 rounded-lg border border-white/10 bg-white/[0.035] p-4">
+            <div className="grid gap-3 md:grid-cols-[1.1fr_0.8fr_0.7fr_auto] md:items-end">
+              <label>
+                <span className="mb-1 block text-xs font-bold text-slate-500">{t("Exercise")}</span>
+                <select className="field" value={recordExercise} onChange={(event) => setRecordExercise(event.target.value)}>
+                  {recordOptions.map((option) => (
+                    <option key={option} value={option}>{t(option)}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="mb-1 block text-xs font-bold text-slate-500">
+                  {recordExercise === "Running Time" ? t("Minutes") : recordExercise === "Pull-ups" ? t("Reps") : t("Weight kg")}
+                </span>
+                <input
+                  className="field"
+                  type="number"
+                  min="0"
+                  step={recordExercise === "Running Time" ? "0.01" : "1"}
+                  value={recordValue}
+                  onChange={(event) => setRecordValue(event.target.value)}
+                  required
+                />
+              </label>
+              <label className={recordExercise === "Pull-ups" || recordExercise === "Running Time" ? "opacity-50" : ""}>
+                <span className="mb-1 block text-xs font-bold text-slate-500">{t("Reps")}</span>
+                <input
+                  className="field"
+                  type="number"
+                  min="1"
+                  value={recordReps}
+                  onChange={(event) => setRecordReps(event.target.value)}
+                  disabled={recordExercise === "Pull-ups" || recordExercise === "Running Time"}
+                />
+              </label>
+              <button className="neon-button" type="submit" disabled={savingRecord}>
+                <Trophy className="h-4 w-4" />
+                {savingRecord ? t("Saving") : t("Update")}
+              </button>
+            </div>
+            {recordMessage ? <div className="mt-3 text-sm font-bold text-rival-cyan">{recordMessage}</div> : null}
+          </form>
           <div className="mt-5 space-y-3">
             {profile.personalRecords.length > 0 ? (
               profile.personalRecords.map((record) => (
@@ -198,7 +274,11 @@ export function ProfilePage() {
                   </div>
                   <div className="chip">
                     <Trophy className="mr-1.5 h-3.5 w-3.5 text-rival-amber" />
-                    {record.weight}{t("kg")} x {record.reps}
+                    {record.exerciseName === "Running Time"
+                      ? `${record.weight} ${t("min")}`
+                      : record.exerciseName === "Pull-ups"
+                        ? `${record.reps} ${t("reps")}`
+                        : `${record.weight}${t("kg")} x ${record.reps}`}
                   </div>
                 </div>
               ))

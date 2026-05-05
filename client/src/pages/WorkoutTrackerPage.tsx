@@ -5,7 +5,7 @@ import { useAuth } from "../auth";
 import { ErrorState, LoadingState } from "../components/PageState";
 import { WorkoutSessionForm } from "../components/WorkoutSessionForm";
 import { useI18n } from "../i18n";
-import type { Exercise, MetaData } from "../types";
+import type { Exercise, MetaData, WorkoutContext } from "../types";
 
 export function WorkoutTrackerPage() {
   const { user } = useAuth();
@@ -14,22 +14,25 @@ export function WorkoutTrackerPage() {
   const initialExerciseId = Number((location.state as { exerciseId?: number } | null)?.exerciseId ?? 0) || undefined;
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [meta, setMeta] = useState<MetaData | null>(null);
+  const [context, setContext] = useState<WorkoutContext | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.exercises(), api.meta()])
-      .then(([exerciseData, metaData]) => {
+    if (!user) return;
+    Promise.all([api.exercises(), api.meta(), api.workoutContext(user.id)])
+      .then(([exerciseData, metaData, workoutContext]) => {
         setExercises(exerciseData);
         setMeta(metaData);
+        setContext(workoutContext);
       })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user]);
 
   if (!user) return null;
   if (error) return <ErrorState message={t(error)} />;
-  if (loading || !meta) return <LoadingState label={t("Loading tracker")} />;
+  if (loading || !meta || !context) return <LoadingState label={t("Loading tracker")} />;
 
   return (
     <div className="space-y-6">
@@ -37,7 +40,13 @@ export function WorkoutTrackerPage() {
         <h1 className="text-3xl font-black text-white">{t("Workout Tracker")}</h1>
         <p className="mt-2 text-sm text-slate-400">{t("Log sets, reps, weight, notes, and personal records.")}</p>
       </section>
-      <WorkoutSessionForm user={user} exercises={exercises} categories={meta.categories} initialExerciseId={initialExerciseId} />
+      <WorkoutSessionForm
+        user={user}
+        exercises={exercises}
+        categories={meta.categories}
+        initialExerciseId={initialExerciseId}
+        initialContext={context}
+      />
     </div>
   );
 }

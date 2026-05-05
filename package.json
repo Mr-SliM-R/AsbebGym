@@ -10,11 +10,13 @@
   "scripts": {
     "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w server && npm run build -w client",
+    "test:smoke": "node scripts/smoke-test.mjs",
     "start": "npm run start -w server",
     "seed": "npm run seed -w server",
     "cf:build": "npm run build -w client",
     "cf:typecheck": "tsc -p cloudflare/tsconfig.json --noEmit",
     "cf:d1:schema": "wrangler d1 execute gym-rival-db --remote --file=cloudflare/schema.sql",
+    "cf:d1:migrate:competition": "wrangler d1 execute gym-rival-db --remote --file=cloudflare/migrations/0002_competition_system.sql",
     "cf:d1:seed": "wrangler d1 execute gym-rival-db --remote --file=cloudflare/seed.sql",
     "cf:d1:users": "wrangler d1 execute gym-rival-db --remote --file=cloudflare/add-users-and-avatars.sql",
     "cf:deploy": "npm run cf:build && npm run cf:typecheck && wrangler deploy"

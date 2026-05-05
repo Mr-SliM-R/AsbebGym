@@ -23,6 +23,10 @@ export function ExerciseCard({ exercise, compact = false, actionLabel, onAction 
           muscleGroup={exercise.muscleGroup}
           animationType={exercise.animationType}
           media={getExerciseMedia(exercise)}
+          equipment={exercise.equipment}
+          instructions={exercise.instructions}
+          recommendedSets={exercise.recommendedSets}
+          recommendedReps={exercise.recommendedReps}
         />
       ) : null}
       <div className="p-4">

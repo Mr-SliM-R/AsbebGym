@@ -6,9 +6,10 @@ import { ProgressBar } from "./ProgressBar";
 type RankBadgeProps = {
   rank: Rank;
   compact?: boolean;
+  totalPoints?: number;
 };
 
-export function RankBadge({ rank, compact = false }: RankBadgeProps) {
+export function RankBadge({ rank, compact = false, totalPoints }: RankBadgeProps) {
   const { t } = useI18n();
 
   return (
@@ -21,6 +22,7 @@ export function RankBadge({ rank, compact = false }: RankBadgeProps) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-sm font-bold text-white">{t(rank.name)}</div>
+        {typeof totalPoints === "number" ? <div className="mt-0.5 text-xs font-semibold text-slate-400">{totalPoints} {t("pts")}</div> : null}
         {!compact ? (
           <>
             <div className="mt-1 text-xs text-slate-400">

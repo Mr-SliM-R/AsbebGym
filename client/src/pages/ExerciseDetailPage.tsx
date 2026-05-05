@@ -71,6 +71,10 @@ export function ExerciseDetailPage() {
             muscleGroup={exercise.muscleGroup}
             animationType={exercise.animationType}
             media={getExerciseMedia(exercise)}
+            equipment={exercise.equipment}
+            instructions={exercise.instructions}
+            recommendedSets={exercise.recommendedSets}
+            recommendedReps={exercise.recommendedReps}
           />
           {exercise.animationCredit ? (
             <div className="mt-3 rounded-lg border border-white/10 bg-white/[0.035] px-3 py-2 text-xs font-semibold text-slate-400">

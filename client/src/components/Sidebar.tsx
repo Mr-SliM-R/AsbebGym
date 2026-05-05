@@ -1,9 +1,11 @@
 import {
   Activity,
+  BriefcaseBusiness,
   Dumbbell,
   Flame,
   LayoutDashboard,
   Medal,
+  ShieldCheck,
   Trophy,
   UserCircle
 } from "lucide-react";
@@ -17,7 +19,9 @@ const navItems = [
   { to: "/tracker", label: "Tracker", icon: Activity },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
   { to: "/challenges", label: "Challenges", icon: Flame },
-  { to: "/profile", label: "Profile", icon: UserCircle }
+  { to: "/profile", label: "Profile", icon: UserCircle },
+  { to: "/business", label: "Business", icon: BriefcaseBusiness },
+  { to: "/legal", label: "Legal", icon: ShieldCheck }
 ];
 
 type SidebarProps = {
